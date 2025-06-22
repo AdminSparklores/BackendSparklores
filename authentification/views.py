@@ -1,12 +1,13 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.generics import ListAPIView
 from rest_framework import status
 from django.core.mail import send_mail
 from django.contrib.auth import get_user_model
 from .models import OTPCode
-from .serializers import EmailLoginRequestSerializer, OTPVerifySerializer, UserSerializer
+from .serializers import EmailLoginRequestSerializer, FullUserSerializer, OTPVerifySerializer, UserSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAdminUser
 from django.conf import settings
 import textwrap
 
@@ -91,3 +92,15 @@ class VerifyOTPView(APIView):
             })
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class UserListView(ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = FullUserSerializer
+    permission_classes = [IsAdminUser]
+
+class CurrentUserDetailView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        serializer = FullUserSerializer(request.user)
+        return Response(serializer.data)

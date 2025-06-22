@@ -12,21 +12,26 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
+import os
+import environ
+env = environ.Env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-ieuvpo@dn(be+z2m0qv*ikn3$3zkwv5+02(nag3v6_r+j%0y(i'
+SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env.bool('DEBUG', default=False)
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
 CORS_ALLOW_ALL_ORIGINS = True
 
 
@@ -61,6 +66,16 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
 ]
+
+# Middleware Keamanan Tambahan 
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SESSION_COOKIE_SECURE = True          # Jika HTTPS
+CSRF_COOKIE_SECURE = True             # Jika HTTPS
+X_FRAME_OPTIONS = 'DENY'
+SECURE_HSTS_SECONDS = 3600            # Bisa ditingkatkan setelah validasi HTTPS
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -108,13 +123,26 @@ WSGI_APPLICATION = 'sparklore.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+ENV = os.environ.get('DJANGO_ENV', 'development')
 
+if ENV == 'uhuy':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('DB_NAME'),
+            'USER': os.environ.get('DB_USER'),
+            'PASSWORD': os.environ.get('DB_PASSWORD'),
+            'HOST': os.environ.get('DB_HOST', 'localhost'),
+            'PORT': os.environ.get('DB_PORT', '5432'),
+        }
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -160,46 +188,15 @@ STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / "media"
-
-
-# CORS settings
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:3000",
-# ]
-# CORS_ALLOW_CREDENTIALS = True
-# CORS_ALLOW_HEADERS = [
-#     'authorization
-#     'content-type',
-#     'x-csrftoken',
-#     'x-requested-with',
-# ]
-# CORS_ALLOW_METHODS = [
-#     'GET',
-#     'POST',
-#     'PUT',
-#     'PATCH',
-#     'DELETE',
-# ]
-# # Email settings
-# # https://docs.djangoproject.com/en/5.1/topics/email/
-# # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-# # EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
-# # EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'  # Change this to a proper directory
-# # EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
-# # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# # EMAIL_HOST = 'smtp.example.com'
-# # EMAIL_PORT = 587
-# # EMAIL_USE_TLS = True
-# # EMAIL_HOST_USER = '
-# # EMAIL_HOST_PASSWORD = 'your_password'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'sparkloremanagement@gmail.com'
-EMAIL_HOST_PASSWORD = 'pihh flkh ozsh tkdj'
+EMAIL_HOST_USER = env('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
 
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER

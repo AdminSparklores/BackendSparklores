@@ -9,6 +9,11 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'email']
 
+class FullUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = '__all__' 
+
 class EmailLoginRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
 

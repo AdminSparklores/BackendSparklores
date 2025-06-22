@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import CharmViewSet, DiscountCampaignViewSet, GiftSetOrBundleMonthlySpecialViewSet, OrderViewSet, ProductViewSet, CartViewSet, ReviewViewSet, NewsletterSubscriberViewSet, checkout, VideoContentViewSet, PageBannerViewSet, PhotoGalleryViewSet
+from .views import CharmViewSet, DiscountCampaignViewSet, GiftSetOrBundleMonthlySpecialViewSet, MidtransSnapTokenView, OrderViewSet, ProductViewSet, CartViewSet, ReviewViewSet, NewsletterSubscriberViewSet, checkout, VideoContentViewSet, PageBannerViewSet, PhotoGalleryViewSet, direct_checkout
 
 router = DefaultRouter()
 router.register(r'charms', CharmViewSet, basename='charm')
@@ -19,5 +19,6 @@ router.register(r'gift-sets', GiftSetOrBundleMonthlySpecialViewSet, basename='gi
 urlpatterns = [
     path('', include(router.urls)),
     path('checkout/', checkout, name='checkout'),
-
+    path('direct_checkout/', direct_checkout, name='direct_checkout'),
+    path('midtrans/token/', MidtransSnapTokenView.as_view(), name='midtrans_token'),
 ]

@@ -74,6 +74,7 @@ class Product(models.Model):
     sold_stok = models.IntegerField(default=0)
     discount = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     charms = models.BooleanField(default=False, help_text="Apakah produk ini memiliki charms?")
+    is_charm_spreadable = models.BooleanField(default=False, help_text="Apakah produk ini charmsnya bisa disebarkan?")
 
     # Produk di dalam jewel set
     jewel_set_products = models.ManyToManyField('self', blank=True, symmetrical=False)
@@ -114,6 +115,9 @@ class GiftSetOrBundleMonthlySpecial(models.Model):
     products = models.ManyToManyField(Product, related_name='gift_sets')
     image = models.ImageField(upload_to='gift_sets/')
     created_at = models.DateTimeField(auto_now_add=True)
+    stock = models.IntegerField(default=0)
+    sold_stok = models.IntegerField(default=0)
+    discount = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     is_monthly_special = models.BooleanField(default=True, help_text="Apakah ini adalah produk spesial bulanan?")
 
     def __str__(self):
@@ -124,17 +128,46 @@ class GiftSetOrBundleMonthlySpecial(models.Model):
             raise ValidationError("Harga gift set tidak boleh negatif.")
 
 class Order(models.Model):
+    class PaymentStatus(models.TextChoices):
+        PENDING = 'pending', 'Pending'
+        PAID = 'paid', 'Paid'
+        FAILED = 'failed', 'Failed'
+
+    class FulfillmentStatus(models.TextChoices):
+        PENDING = 'pending', 'Pending'
+        PACKING = 'packing', 'Packing'
+        DELIVERY = 'delivery', 'Delivery'
+        DONE = 'done', 'Done'
+        NOT_ACCEPTED = 'not_accepted', 'Not Accepted'
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    products = models.ManyToManyField(Product)
+    payment_status = models.CharField(max_length=10, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
+    fulfillment_status = models.CharField(max_length=20, choices=FulfillmentStatus.choices, default=FulfillmentStatus.PENDING)
     total_price = models.DecimalField(max_digits=10, decimal_places=2)
-    status = models.CharField(choices=[('pending', 'Pending'), ('paid', 'Paid'), ('failed', 'Failed')], max_length=10)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     shipping_address = models.CharField(max_length=255)
     shipping_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    rejection_reason = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Order {self.id} by {self.user.email} - {self.status}"
+        return f"Order #{self.id} - {self.user.email} ({self.payment_status})"
+
+class OrderItem(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
+    gift_set = models.ForeignKey(GiftSetOrBundleMonthlySpecial, on_delete=models.SET_NULL, null=True, blank=True)
+    quantity = models.PositiveIntegerField(default=1)
+
+    def __str__(self):
+        return f"OrderItem in Order #{self.order.id}"
+
+class OrderItemCharm(models.Model):
+    order_item = models.ForeignKey(OrderItem, on_delete=models.CASCADE, related_name='charms')
+    charm = models.ForeignKey(Charm, on_delete=models.SET_NULL, null=True)
+
+    def __str__(self):
+        return f"{self.charm.name} in OrderItem #{self.order_item.id}"
 
 class NewsletterSubscriber(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -150,6 +183,7 @@ class Review(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
     image = models.ImageField(upload_to="review_images/", blank=True, null=True)
     products = models.ManyToManyField(Product)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return f"{self.user_name} - {self.rating}⭐"
@@ -160,36 +194,42 @@ class Cart(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - Cart"
-    
-    def clean(self):
-        if not self.user.is_authenticated:
-            raise ValidationError("User harus terautentikasi untuk membuat keranjang belanja.")
-        if Cart.objects.filter(user=self.user).exists():
-            raise ValidationError("User sudah memiliki keranjang belanja yang aktif.")
 
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, blank=True, null=True)
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, blank=True, null=True)
+    gift_set = models.ForeignKey(GiftSetOrBundleMonthlySpecial, on_delete=models.SET_NULL, null=True, blank=True)
     quantity = models.PositiveIntegerField(default=1)
     charms = models.ManyToManyField(Charm, blank=True, through='CartItemCharm')
 
     def __str__(self):
-        return f"{self.product.name} - {self.quantity} pcs in {self.cart.user.email}'s cart"
+        product_name = self.product.name if self.product else (
+            self.gift_set.name if self.gift_set else "No Product/Gift Set"
+        )
+        user_email = self.cart.user.email if self.cart and self.cart.user else "Unknown User"
+        return f"{product_name} in {user_email}'s cart"
     
     def clean(self):
         if self.quantity <= 0:
             raise ValidationError("Jumlah item harus lebih dari 0.")
         if self.product and self.product.stock < self.quantity:
             raise ValidationError("Stok tidak cukup untuk produk ini.")
+        if self.product and self.gift_set:
+            raise ValidationError("Hanya boleh memilih salah satu: product atau gift_set.")
 
 class CartItemCharm(models.Model):
     item = models.ForeignKey(CartItem, on_delete=models.CASCADE)
     charm = models.ForeignKey(Charm, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
 
     def __str__(self):
-        return f"{self.charm.name} - {self.item.product.name} in {self.item.cart.user.email}'s cart"
-    
-        
+        item = self.item
+        product_name = item.product.name if item and item.product else (
+            item.gift_set.name if item and item.gift_set else "Unknown Item"
+        )
+        user_email = item.cart.user.email if item and item.cart and item.cart.user else "Unknown User"
+        return f"{self.charm.name}x{self.quantity} - {product_name} in {user_email}'s cart"
+
 class VideoContent(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)

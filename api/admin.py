@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Charm, DiscountedItem, GiftSetOrBundleMonthlySpecial, Product, Order, Review, NewsletterSubscriber, Cart, CartItem, CartItemCharm, ProductImage, VideoContent, PageBanner, PhotoGallery, DiscountCampaign
+from .models import Charm, DiscountedItem, GiftSetOrBundleMonthlySpecial, OrderItem, OrderItemCharm, Product, Order, Review, NewsletterSubscriber, Cart, CartItem, CartItemCharm, ProductImage, VideoContent, PageBanner, PhotoGallery, DiscountCampaign
 
 @admin.register(Charm)
 class CharmAdmin(admin.ModelAdmin):
@@ -17,18 +17,11 @@ class ProductImageAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('name', 'category', 'price', 'label', 'stock', 'details')
-    list_filter = ('category', 'label')
+    list_display = ('name', 'category', 'price', 'label', 'stock', 'details', 'rating', 'discount', 'charms', 'is_charm_spreadable')
+    list_filter = ('category', 'label', 'charms', 'is_charm_spreadable')
     filter_horizontal = ('jewel_set_products',) 
     search_fields = ['name']
     inlines = [ProductImageInline]
-
-@admin.register(Order)
-class OrderAdmin(admin.ModelAdmin):
-    list_display = ('user', 'total_price', 'status')
-    list_filter = ('status',)
-    date_hierarchy = 'created_at'
-    readonly_fields = ('created_at', 'updated_at')
 
 @admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):
@@ -42,29 +35,61 @@ class NewsletterSubscriberAdmin(admin.ModelAdmin):
 class CartItemCharmInline(admin.TabularInline):
     model = CartItemCharm
     extra = 1
+    autocomplete_fields = ['charm']
 
 class CartItemInline(admin.TabularInline):
     model = CartItem
     extra = 1
     show_change_link = True
+    autocomplete_fields = ['product', 'gift_set']
+    readonly_fields = ['display_product_or_gift_set']
+    fields = ['display_product_or_gift_set', 'product', 'gift_set', 'quantity']
+
+    def display_product_or_gift_set(self, obj):
+        if obj.product:
+            return f"[Product] {obj.product.name}"
+        elif obj.gift_set:
+            return f"[GiftSet] {obj.gift_set.name}"
+        return "-"
+    display_product_or_gift_set.short_description = "Product / Gift Set"
 
 @admin.register(Cart)
 class CartAdmin(admin.ModelAdmin):
-    list_display = ('user', 'created_at')
+    list_display = ('user', 'created_at', 'total_items', 'cart_owner')
     list_filter = ('created_at',)
     search_fields = ['user__email']
     inlines = [CartItemInline]
 
+    def total_items(self, obj):
+        return obj.items.count()
+    total_items.short_description = "Jumlah Item"
+
+    def cart_owner(self, obj):
+        return obj.user.email
+    cart_owner.short_description = "Pemilik Cart"
+
+
 @admin.register(CartItem)
 class CartItemAdmin(admin.ModelAdmin):
-    list_display = ('cart', 'product', 'quantity')
-    list_filter = ('product',)
+    list_display = ('cart', 'display_product_or_gift_set', 'quantity')
+    list_filter = ('product','gift_set')
     inlines = [CartItemCharmInline]
+    autocomplete_fields = ['cart', 'product', 'gift_set']
+    search_fields = ['cart__user__email', 'product__name', 'gift_set__name'] 
+
+    def display_product_or_gift_set(self, obj):
+        if obj.product:
+            return f"[Product] {obj.product.name}"
+        elif obj.gift_set:
+            return f"[GiftSet] {obj.gift_set.name}"
+        return "-"
+    display_product_or_gift_set.short_description = "Produk / Gift Set"
 
 @admin.register(CartItemCharm)
 class CartItemCharmAdmin(admin.ModelAdmin):
     list_display = ('item', 'charm')
     list_filter = ('charm',)
+    autocomplete_fields = ['item', 'charm']
 
 @admin.register(VideoContent)
 class VideoContentAdmin(admin.ModelAdmin):
@@ -103,3 +128,32 @@ class GiftSetOrBundleMonthlySpecialAdmin(admin.ModelAdmin):
     list_filter = ('label',)
     search_fields = ('name',)
     filter_horizontal = ('products',)
+
+class OrderItemCharmInline(admin.TabularInline):
+    model = OrderItemCharm
+    extra = 0
+
+class OrderItemInline(admin.TabularInline):
+    model = OrderItem
+    extra = 0
+    readonly_fields = ['product', 'gift_set', 'quantity']
+    show_change_link = True
+
+@admin.register(Order)
+class OrderAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'payment_status', 'fulfillment_status', 'total_price', 'created_at')
+    list_filter = ('payment_status', 'fulfillment_status', 'created_at')
+    search_fields = ('user__email', 'id')
+    inlines = [OrderItemInline]
+    readonly_fields = ('total_price', 'created_at', 'updated_at')
+
+@admin.register(OrderItem)
+class OrderItemAdmin(admin.ModelAdmin):
+    list_display = ('id', 'order', 'product', 'gift_set', 'quantity')
+    inlines = [OrderItemCharmInline]
+    search_fields = ('order__id', 'product__name')
+
+@admin.register(OrderItemCharm)
+class OrderItemCharmAdmin(admin.ModelAdmin):
+    list_display = ('id', 'order_item', 'charm')
+    search_fields = ('order_item__order__id', 'charm__name')
