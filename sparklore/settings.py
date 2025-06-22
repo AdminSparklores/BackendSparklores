@@ -31,8 +31,10 @@ SECRET_KEY = env('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool('DEBUG', default=False)
 
+# CORS_ALLOW_CREDENTIALS = True
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
 CORS_ALLOW_ALL_ORIGINS = True
+# CSRF_TRUSTED_ORIGINS = env.list('ALLOWED_HOSTS')
 
 
 # Application definition
@@ -70,8 +72,8 @@ MIDDLEWARE = [
 # Middleware Keamanan Tambahan 
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
-SESSION_COOKIE_SECURE = True          # Jika HTTPS
-CSRF_COOKIE_SECURE = True             # Jika HTTPS
+# SESSION_COOKIE_SECURE = True          # Jika HTTPS
+# CSRF_COOKIE_SECURE = True             # Jika HTTPS
 X_FRAME_OPTIONS = 'DENY'
 SECURE_HSTS_SECONDS = 3600            # Bisa ditingkatkan setelah validasi HTTPS
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
@@ -184,9 +186,6 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-STATICFILES_DIRS = [
-    BASE_DIR / "static",
-]
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
