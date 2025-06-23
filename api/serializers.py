@@ -214,15 +214,15 @@ class CartItemSerializer(serializers.ModelSerializer):
     product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), required=False)
     gift_set = serializers.PrimaryKeyRelatedField(queryset=GiftSetOrBundleMonthlySpecial.objects.all(), required=False)
 
-    charms = serializers.ListField(
+    charms_input = serializers.ListField(
         child=serializers.IntegerField(), required=False, write_only=True
     )
-    charms_display = serializers.SerializerMethodField(read_only=True)
+    charms = serializers.SerializerMethodField(read_only=True)
     source_type = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = CartItem
-        fields = ['id', 'product', 'gift_set', 'quantity', 'charms', 'charms_display', 'source_type']
+        fields = ['id', 'product', 'gift_set', 'quantity', 'charms_input', 'charms', 'source_type']
 
     def get_source_type(self, obj):
         if obj.product:
@@ -231,7 +231,7 @@ class CartItemSerializer(serializers.ModelSerializer):
             return 'gift_set'
         return 'charms_only'
 
-    def get_charms_display(self, obj):
+    def get_charms(self, obj):
         charm_items = CartItemCharm.objects.filter(item=obj)
         result = []
         for charm_item in charm_items:
