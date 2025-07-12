@@ -4,6 +4,8 @@ from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+from rest_framework.generics import ListAPIView
+from rest_framework.permissions import IsAdminUser
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
@@ -13,7 +15,8 @@ from .serializers import (
     CartSerializer, CartItemSerializer,
     OrderSerializer, NewsletterSubscriberSerializer,
     ReviewSerializer, VideoContentSerializer,
-    PageBannerSerializer, PhotoGalerySerializer
+    PageBannerSerializer, PhotoGalerySerializer,
+    OrderTableSerializer
 )
 from django.db import transaction
 from django.utils import timezone
@@ -107,10 +110,6 @@ class CartViewSet(viewsets.ViewSet):
         cart = Cart.objects.get(user=request.user)
         return Response(CartSerializer(cart, context={'request': request}).data)
 
-    @action(detail=False, methods=['post'])
-    def selective_checkout(self, request):
-        pass
-
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
@@ -123,6 +122,18 @@ class NewsletterSubscriberViewSet(viewsets.ModelViewSet):
     queryset = NewsletterSubscriber.objects.all()
     serializer_class = NewsletterSubscriberSerializer
     permission_classes = [AllowAny]
+
+class AdminOrderTableView(ListAPIView):
+    serializer_class = OrderTableSerializer
+    permission_classes = [IsAdminUser]
+    queryset = Order.objects.all().order_by('-created_at')
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        status_filter = self.request.query_params.get('status')
+        if status_filter:
+            qs = qs.filter(fulfillment_status=status_filter)
+        return qs
 
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
@@ -243,13 +254,160 @@ class MidtransSnapTokenView(APIView):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def checkout(request):
-    pass
+    cart = get_object_or_404(Cart, user=request.user)
+    if not cart.items.exists():
+        return Response({"error": "Cart is empty"}, status=400)
+
+    with transaction.atomic():
+        order = Order.objects.create(
+            user=request.user,
+            payment_status='pending',
+            fulfillment_status='awaiting_shipment',
+            total_price=0,
+            shipping_address=request.data.get("shipping_address", ""),
+        )
+
+        total = 0
+        for item in cart.items.all():
+            order_item = OrderItem.objects.create(
+                order=order,
+                product=item.product,
+                gift_set=item.gift_set,
+                quantity=item.quantity
+            )
+
+            # Kurangi stock & hitung total
+            if item.product:
+                item.product.stock -= item.quantity
+                item.product.save()
+                total += float(item.product.price) * item.quantity
+
+            elif item.gift_set:
+                item.gift_set.stock -= item.quantity
+                item.gift_set.save()
+                total += float(item.gift_set.price) * item.quantity
+
+            # Jika charms only
+            if item.charms.exists():
+                charm_counts = Counter()
+                for cc in CartItemCharm.objects.filter(item=item):
+                    OrderItemCharm.objects.create(order_item=order_item, charm=cc.charm)
+                    charm_counts[cc.charm.id] += cc.quantity
+                    total += float(cc.charm.price) * cc.quantity
+
+            elif item.product is None and item.gift_set is None:
+                # charms only (tanpa product/giftset)
+                for cc in CartItemCharm.objects.filter(item=item):
+                    OrderItemCharm.objects.create(order_item=order_item, charm=cc.charm)
+                    total += float(cc.charm.price) * cc.quantity
+
+            item.delete()
+
+        order.total_price = total
+        order.save()
+
+    return Response({"order_id": order.id, "total_price": total})
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def direct_checkout(request):
-    pass
+    with transaction.atomic():
+        order = Order.objects.create(
+            user=request.user,
+            payment_status='pending',
+            fulfillment_status='awaiting_shipment',
+            total_price=0,
+            shipping_address=request.data.get("shipping_address", ""),
+        )
 
+        quantity = int(request.data.get("quantity", 1))
+        charms = request.data.get("charms", [])
+
+        order_item = OrderItem.objects.create(
+            order=order,
+            product=None,
+            gift_set=None,
+            quantity=quantity
+        )
+
+        total = 0
+
+        if "product" in request.data:
+            product = get_object_or_404(Product, id=request.data["product"])
+            order_item.product = product
+            product.stock -= quantity
+            product.save()
+            total += float(product.price) * quantity
+
+        elif "gift_set" in request.data:
+            gift_set = get_object_or_404(GiftSetOrBundleMonthlySpecial, id=request.data["gift_set"])
+            order_item.gift_set = gift_set
+            gift_set.stock -= quantity
+            gift_set.save()
+            total += float(gift_set.price) * quantity
+
+        if charms:
+            charm_counts = Counter(charms)
+            for charm_id, qty in charm_counts.items():
+                charm = get_object_or_404(Charm, id=charm_id)
+                for _ in range(qty):
+                    OrderItemCharm.objects.create(order_item=order_item, charm=charm)
+                total += float(charm.price) * qty
+
+        order_item.save()
+        order.total_price = total
+        order.save()
+
+    return Response({"order_id": order.id, "total_price": total})
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def selective_checkout(request):
+    cart_item_ids = request.data.get("cart_item_ids", [])
+    if not cart_item_ids:
+        return Response({"error": "Provide cart_item_ids"}, status=400)
+
+    with transaction.atomic():
+        order = Order.objects.create(
+            user=request.user,
+            payment_status='pending',
+            fulfillment_status='awaiting_shipment',
+            total_price=0,
+            shipping_address=request.data.get("shipping_address", ""),
+        )
+
+        total = 0
+        for cid in cart_item_ids:
+            item = get_object_or_404(CartItem, id=cid, cart__user=request.user)
+
+            oi = OrderItem.objects.create(
+                order=order,
+                product=item.product,
+                gift_set=item.gift_set,
+                quantity=item.quantity
+            )
+
+            if item.product:
+                item.product.stock -= item.quantity
+                item.product.save()
+                total += float(item.product.price) * item.quantity
+
+            elif item.gift_set:
+                item.gift_set.stock -= item.quantity
+                item.gift_set.save()
+                total += float(item.gift_set.price) * item.quantity
+
+            # charms
+            for cc in CartItemCharm.objects.filter(item=item):
+                OrderItemCharm.objects.create(order_item=oi, charm=cc.charm)
+                total += float(cc.charm.price) * cc.quantity
+
+            item.delete()
+
+        order.total_price = total
+        order.save()
+
+    return Response({"order_id": order.id, "total_price": total})
 
 @api_view(['POST'])
 @permission_classes([AllowAny])

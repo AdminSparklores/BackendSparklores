@@ -1,11 +1,11 @@
+from django.utils import timezone
+from datetime import timedelta
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from .models import Charm, GiftSetOrBundleMonthlySpecial, OrderItem, OrderItemCharm, Product, Order, Review, NewsletterSubscriber, CartItem, Cart, CartItemCharm, VideoContent, ProductImage, PageBanner, PhotoGallery, DiscountedItem, DiscountCampaign
 from django.core.mail import send_mail
-User = get_user_model()
 from django.conf import settings
 import textwrap
-from django.core.exceptions import ValidationError
 
 User = get_user_model()
 
@@ -205,6 +205,69 @@ class OrderSerializer(serializers.ModelSerializer):
             'items', 'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at']
+
+def humanize_timesince(dt):
+        now = timezone.now()
+        delta = now - dt
+
+        seconds = int(delta.total_seconds())
+        periods = [
+            ('year', 60 * 60 * 24 * 365),
+            ('month', 60 * 60 * 24 * 30),
+            ('week', 60 * 60 * 24 * 7),
+            ('day', 60 * 60 * 24),
+            ('hour', 60 * 60),
+            ('minute', 60),
+            ('second', 1)
+        ]
+
+        strings = []
+
+        for period_name, period_seconds in periods:
+            if seconds >= period_seconds:
+                period_value, seconds = divmod(seconds, period_seconds)
+                if period_value > 0:
+                    strings.append(f"{period_value} {period_name}{'s' if period_value !=1 else ''}")
+            if len(strings) >= 3:
+                break
+
+        if not strings:
+            return "just now"
+
+        return ' '.join(strings) + " ago"
+
+class OrderTableSerializer(serializers.ModelSerializer):
+    time_elapsed = serializers.SerializerMethodField()
+    product_summary = serializers.SerializerMethodField()
+    message = serializers.SerializerMethodField()
+    user_email = serializers.CharField(source='user.email', read_only=True)
+
+    class Meta:
+        model = Order
+        fields = [
+            'id', 'user_email', 'time_elapsed', 'created_at', 'product_summary',
+            'message', 'total_price', 'fulfillment_status'
+        ]
+
+    def get_time_elapsed(self, obj):
+        return humanize_timesince(obj.created_at)
+
+    def get_product_summary(self, obj):
+        names = []
+        for item in obj.items.all():
+            if item.product:
+                names.append(item.product.name)
+            elif item.gift_set:
+                names.append(item.gift_set.name)
+            charms = [c.charm.name for c in item.charms.all()]
+            if charms:
+                names.extend(charms)
+        if not names:
+            return "No items"
+        return ", ".join(names[:2]) + ("..." if len(names) > 2 else "")
+
+    def get_message(self, obj):
+        return obj.rejection_reason or "No message"
 
 class CartItemCharmSerializer(serializers.ModelSerializer):
     class Meta: model = CartItemCharm; fields = ['charm_id']
