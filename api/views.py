@@ -1,5 +1,5 @@
 from collections import Counter
-from .services import trackresi
+from .services.jet_service import JetService
 from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -249,3 +249,37 @@ def checkout(request):
 @permission_classes([IsAuthenticated])
 def direct_checkout(request):
     pass
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def create_order(request):
+    jet = JetService()
+    detail = request.data['detail'] 
+    resp = jet.order(detail=detail)
+    return Response(resp)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def cancel_order(request):
+    jet = JetService()
+    detail = request.data['detail'] 
+    resp = jet.cancel_order(detail=detail)
+    return Response(resp)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def track_order(request):
+    jet = JetService()
+    resp = jet.track(awb=request.data['awb'])
+    return Response(resp)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def check_tariff(request):
+    jet = JetService()
+    resp = jet.tariff_check(data=request.data)
+    return Response(resp)
