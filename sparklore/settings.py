@@ -38,18 +38,18 @@ CORS_ALLOWED_ORIGINS = [
     "https://sparkloreofficial.com",
 ]
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
-CSRF_TRUSTED_ORIGINS = [
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
-  'https://sparkloreofficial.com',
-  'https://www.sparkloreofficial.com',
-  'http://sparkloreofficial.com',
-  'http://localhost',
-  'http://localhost:5173',
-  '168.231.119.186',
-  'www.sparkloreofficial.com',
-  'sparkloreofficial.com',
-]
+# CSRF_TRUSTED_ORIGINS = [
+#     'http://localhost:5173',
+#     'http://127.0.0.1:5173',
+#     'https://sparkloreofficial.com',
+#     'https://www.sparkloreofficial.com',
+#     'http://sparkloreofficial.com',
+#     'http://localhost',
+#     'http://localhost:5173',
+#     '168.231.119.186',
+#     'www.sparkloreofficial.com',
+#     'sparkloreofficial.com',
+# ]
 
 CORS_ALLOW_HEADERS = [
     "accept",
@@ -227,3 +227,7 @@ EMAIL_HOST_USER = env('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
 
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600 
+FILE_UPLOAD_MAX_MEMORY_SIZE = 104857600 
