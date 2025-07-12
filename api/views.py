@@ -161,6 +161,18 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         return Response({'message': f'Status updated to {new_status}'})
 
+    @action(detail=False, methods=['post'], permission_classes=[IsAdminUser])
+    def create_labels(self, request):
+        order_ids = request.data.get("order_ids", [])
+        updated = []
+        for oid in order_ids:
+            order = Order.objects.filter(id=oid, fulfillment_status='awaiting_shipment').first()
+            if order:
+                order.fulfillment_status = 'collection'
+                order.save()
+                updated.append(oid)
+        return Response({"updated_orders": updated})
+
 class VideoContentViewSet(viewsets.ModelViewSet):
     queryset = VideoContent.objects.all()
     serializer_class = VideoContentSerializer
