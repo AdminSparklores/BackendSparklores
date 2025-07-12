@@ -5,18 +5,23 @@ from django.contrib.auth.admin import UserAdmin
 @admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin):
     model = CustomUser
-    list_display = ('email', 'is_active', 'is_staff')
-    list_filter = ('is_staff',)
+    list_display = ('email', 'is_active', 'is_staff', 'is_superuser')
+    list_filter = ('is_staff','is_superuser', 'is_active')
     search_fields = ('email',)
     ordering = ('email',)
+
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
-        ('Permissions', {'fields': ('is_staff', 'is_active')}),
+        ('Permissions', {'fields': (
+            'is_staff', 'is_superuser', 'is_active'
+        )}),
+        ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
+
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'password1', 'password2', 'is_staff', 'is_active')}
+            'fields': ('email', 'password1', 'password2', 'is_staff', 'is_superuser', 'is_active')}
         ),
     )
 
