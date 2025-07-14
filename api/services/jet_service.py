@@ -13,12 +13,12 @@ class JetService:
     GENERAL_BASE_URL = "https://demo-general.inuat-jntexpress.id"
 
     # Credentials
-    ORDER_KEY = "AKe62df84bJ3d8e4b1hea2R45j11klsb"
-    ORDER_USERNAME = "SPARKLORE"
-    ORDER_API_KEY = "SKA9DY"
-    TARIFF_KEY = "yjfYtp3CPaXK"
-    TRACK_PASSWORD = "yjfYtp3CPaXK"
-    ECOMPANY_ID = "SPARKLORE"
+    ORDER_KEY = ""
+    ORDER_USERNAME = ""
+    ORDER_API_KEY = ""
+    TARIFF_KEY = ""
+    TRACK_PASSWORD = ""
+    ECOMPANY_ID = ""
 
     def _basic_auth_header(self):
         token = f"{self.ECOMPANY_ID}:{self.TRACK_PASSWORD}"
