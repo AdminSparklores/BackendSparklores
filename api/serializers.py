@@ -102,17 +102,31 @@ class ProductSerializer(serializers.ModelSerializer):
         return data
 
 class ReviewSerializer(serializers.ModelSerializer):
-    products = serializers.PrimaryKeyRelatedField(many=True, queryset=Product.objects.all())
+    products = serializers.PrimaryKeyRelatedField(many=True, queryset=Product.objects.all(), required=False)
+    charms = serializers.PrimaryKeyRelatedField(many=True, queryset=Charm.objects.all(), required=False)
+    gift_sets = serializers.PrimaryKeyRelatedField(many=True, queryset=GiftSetOrBundleMonthlySpecial.objects.all(), required=False)
+    user_name = serializers.CharField(source='user.email', read_only=True)
 
     class Meta:
         model = Review
         fields = '__all__'
 
-    def validate_products(self, value):
-        if len(value) == 0:
-            raise serializers.ValidationError("Must review at least 1 product")
-        return value
+    def create(self, validated_data):
+        products = validated_data.pop('products', [])
+        charms = validated_data.pop('charms', [])
+        gift_sets = validated_data.pop('gift_sets', [])
+        user = self.context['request'].user
 
+        review = Review.objects.create(user=user, **validated_data)
+
+        if products:
+            review.products.set(products)
+        if charms:
+            review.charms.set(charms)
+        if gift_sets:
+            review.gift_sets.set(gift_sets)
+
+        return review
 
     def validate_rating(self, value):
         if value < 1 or value > 5:
@@ -202,7 +216,7 @@ class OrderSerializer(serializers.ModelSerializer):
             'id', 'user', 'user_email',
             'payment_status', 'fulfillment_status',
             'total_price', 'shipping_address', 'shipping_cost', 'rejection_reason',
-            'items', 'created_at', 'updated_at'
+            'items', 'created_at', 'updated_at', 'weight',
         ]
         read_only_fields = ['created_at', 'updated_at']
 

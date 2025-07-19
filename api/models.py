@@ -144,6 +144,7 @@ class Order(models.Model):
     payment_status = models.CharField(max_length=10, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
     fulfillment_status = models.CharField(max_length=20, choices=FulfillmentStatus.choices, default=FulfillmentStatus.PENDING)
     total_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    weight = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     shipping_address = models.CharField(max_length=255)
     shipping_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     rejection_reason = models.TextField(blank=True, null=True)
@@ -193,12 +194,15 @@ class NewsletterSubscriber(models.Model):
         return self.user.email
 
 class Review(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
     user_name = models.CharField(max_length=100)
     rating = models.IntegerField(choices=[(i, i) for i in range(1, 6)])
     review_text = models.TextField(blank=True, null=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
     image = models.ImageField(upload_to="review_images/", blank=True, null=True)
-    products = models.ManyToManyField(Product)
+    products = models.ManyToManyField(Product, blank=True)
+    charms = models.ManyToManyField(Charm, blank=True)
+    gift_sets = models.ManyToManyField(GiftSetOrBundleMonthlySpecial, blank=True)
     order = models.ForeignKey(Order, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
