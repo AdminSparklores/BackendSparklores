@@ -2,6 +2,10 @@ import requests
 import base64
 import json
 import hashlib
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class JetService:
     """
@@ -11,6 +15,9 @@ class JetService:
     # Base URLs
     ORDER_BASE_URL = "https://demo-ecommerce.inuat-jntexpress.id"
     GENERAL_BASE_URL = "https://demo-general.inuat-jntexpress.id"
+
+    midtrans_server_key = os.getenv("MIDTRANS_SERVER_KEY")
+    midtrans_is_production = os.getenv("MIDTRANS_IS_PRODUCTION", "False").lower()
 
     # Credentials
     ORDER_KEY = ""

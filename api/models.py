@@ -143,7 +143,7 @@ class Order(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     payment_status = models.CharField(max_length=10, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
     fulfillment_status = models.CharField(max_length=20, choices=FulfillmentStatus.choices, default=FulfillmentStatus.PENDING)
-    total_price = models.DecimalField(max_digits=10, decimal_places=2)
+    total_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     shipping_address = models.CharField(max_length=255)
     shipping_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     rejection_reason = models.TextField(blank=True, null=True)
@@ -152,6 +152,19 @@ class Order(models.Model):
 
     def __str__(self):
         return f"Order #{self.id} - {self.user.email} ({self.payment_status})"
+
+    def update_total_price(self):
+        total = 0
+        for item in self.items.all():
+            if item.product:
+                total += (item.product.price or 0) * item.quantity
+            if item.gift_set:
+                total += (item.gift_set.price or 0) * item.quantity
+            for charm in item.charms.all():
+                if charm.charm:
+                    total += charm.charm.price or 0
+        self.total_price = total
+        self.save()
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
@@ -167,7 +180,10 @@ class OrderItemCharm(models.Model):
     charm = models.ForeignKey(Charm, on_delete=models.SET_NULL, null=True)
 
     def __str__(self):
-        return f"{self.charm.name} in OrderItem #{self.order_item.id}"
+        charm_name = self.charm.name if self.charm else "No Charm"
+        order_item_id = self.order_item.id if self.order_item else "No OrderItem"
+        return f"{charm_name} in OrderItem #{order_item_id}"
+
 
 class NewsletterSubscriber(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)

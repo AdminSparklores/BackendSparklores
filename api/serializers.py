@@ -238,7 +238,7 @@ def humanize_timesince(dt):
 
 class OrderTableSerializer(serializers.ModelSerializer):
     time_elapsed = serializers.SerializerMethodField()
-    product_summary = serializers.SerializerMethodField()
+    product_summary = OrderItemSerializer(many=True, read_only=True, source='items')
     message = serializers.SerializerMethodField()
     user_email = serializers.CharField(source='user.email', read_only=True)
 
@@ -251,20 +251,6 @@ class OrderTableSerializer(serializers.ModelSerializer):
 
     def get_time_elapsed(self, obj):
         return humanize_timesince(obj.created_at)
-
-    def get_product_summary(self, obj):
-        names = []
-        for item in obj.items.all():
-            if item.product:
-                names.append(item.product.name)
-            elif item.gift_set:
-                names.append(item.gift_set.name)
-            charms = [c.charm.name for c in item.charms.all()]
-            if charms:
-                names.extend(charms)
-        if not names:
-            return "No items"
-        return ", ".join(names[:2]) + ("..." if len(names) > 2 else "")
 
     def get_message(self, obj):
         return obj.rejection_reason or "No message"
