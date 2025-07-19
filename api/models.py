@@ -134,6 +134,10 @@ class Order(models.Model):
         FAILED = 'failed', 'Failed'
 
     class FulfillmentStatus(models.TextChoices):
+        COLLECTION = 'collection', 'Collection'
+        AWAITING_SHIPMENT = 'awaiting_shipment', 'Awaiting Shipment'
+        ON_SHIPPING = 'on_shipping', 'On Shipping'
+        SHIPPED = 'shipped', 'Shipped'
         PENDING = 'pending', 'Pending'
         PACKING = 'packing', 'Packing'
         DELIVERY = 'delivery', 'Delivery'
@@ -172,6 +176,7 @@ class OrderItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
     gift_set = models.ForeignKey(GiftSetOrBundleMonthlySpecial, on_delete=models.SET_NULL, null=True, blank=True)
     quantity = models.PositiveIntegerField(default=1)
+    message = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"OrderItem in Order #{self.order.id}"
@@ -184,7 +189,6 @@ class OrderItemCharm(models.Model):
         charm_name = self.charm.name if self.charm else "No Charm"
         order_item_id = self.order_item.id if self.order_item else "No OrderItem"
         return f"{charm_name} in OrderItem #{order_item_id}"
-
 
 class NewsletterSubscriber(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -221,6 +225,7 @@ class CartItem(models.Model):
     gift_set = models.ForeignKey(GiftSetOrBundleMonthlySpecial, on_delete=models.SET_NULL, null=True, blank=True)
     quantity = models.PositiveIntegerField(default=1)
     charms = models.ManyToManyField(Charm, blank=True, through='CartItemCharm')
+    message = models.TextField(blank=True, null=True)
 
     def __str__(self):
         product_name = self.product.name if self.product else (

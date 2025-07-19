@@ -125,7 +125,7 @@ class NewsletterSubscriberViewSet(viewsets.ModelViewSet):
 
 class AdminOrderTableView(ListAPIView):
     serializer_class = OrderTableSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [AllowAny] #[IsAdminUser]
     queryset = Order.objects.all().order_by('-created_at')
 
     def get_queryset(self):
@@ -138,10 +138,10 @@ class AdminOrderTableView(ListAPIView):
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny] #[IsAuthenticated]
 
-    def get_queryset(self):
-        return Order.objects.filter(user=self.request.user).order_by('-created_at')
+    # def get_queryset(self):
+    #     return Order.objects.filter(user=self.request.user).order_by('-created_at')
 
     @action(detail=True, methods=['patch'])
     def update_status(self, request, pk=None):
@@ -161,16 +161,22 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         return Response({'message': f'Status updated to {new_status}'})
 
-    @action(detail=False, methods=['post'], permission_classes=[IsAdminUser])
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def create_labels(self, request):
         order_ids = request.data.get("order_ids", [])
         updated = []
-        for oid in order_ids:
-            order = Order.objects.filter(id=oid, fulfillment_status='awaiting_shipment').first()
-            if order:
-                order.fulfillment_status = 'collection'
+        with transaction.atomic():
+            orders = Order.objects.filter(
+                id__in=order_ids,
+                fulfillment_status__in=[
+                    Order.FulfillmentStatus.AWAITING_SHIPMENT,
+                    Order.FulfillmentStatus.PENDING,
+                ]
+            )
+            for order in orders:
+                order.fulfillment_status = Order.FulfillmentStatus.COLLECTION
                 order.save()
-                updated.append(oid)
+                updated.append(order.id)
         return Response({"updated_orders": updated})
 
 class VideoContentViewSet(viewsets.ModelViewSet):
@@ -285,7 +291,8 @@ def checkout(request):
                 order=order,
                 product=item.product,
                 gift_set=item.gift_set,
-                quantity=item.quantity
+                quantity=item.quantity,
+                message=item.message
             )
 
             # Kurangi stock & hitung total
@@ -339,7 +346,8 @@ def direct_checkout(request):
             order=order,
             product=None,
             gift_set=None,
-            quantity=quantity
+            quantity=quantity,
+            message=order_item.message
         )
 
         total = 0
@@ -396,7 +404,8 @@ def selective_checkout(request):
                 order=order,
                 product=item.product,
                 gift_set=item.gift_set,
-                quantity=item.quantity
+                quantity=item.quantity,
+                message=item.message
             )
 
             if item.product:

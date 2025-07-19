@@ -204,7 +204,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OrderItem
-        fields = ['id', 'product', 'product_name', 'gift_set', 'gift_set_name', 'quantity', 'charms']
+        fields = ['id', 'product', 'product_name', 'gift_set', 'gift_set_name', 'quantity', 'charms', 'message']
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
@@ -285,7 +285,7 @@ class CartItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CartItem
-        fields = ['id', 'product', 'gift_set', 'quantity', 'charms_input', 'charms', 'source_type']
+        fields = ['id', 'product', 'gift_set', 'quantity', 'charms_input', 'charms', 'source_type', 'message']
 
     def get_source_type(self, obj):
         if obj.product:
