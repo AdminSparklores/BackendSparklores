@@ -125,7 +125,7 @@ class NewsletterSubscriberViewSet(viewsets.ModelViewSet):
 
 class AdminOrderTableView(ListAPIView):
     serializer_class = OrderTableSerializer
-    permission_classes = [AllowAny] #[IsAdminUser]
+    permission_classes = [IsAdminUser]
     queryset = Order.objects.all().order_by('-created_at')
 
     def get_queryset(self):
@@ -138,10 +138,10 @@ class AdminOrderTableView(ListAPIView):
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
-    permission_classes = [AllowAny] #[IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
-    # def get_queryset(self):
-    #     return Order.objects.filter(user=self.request.user).order_by('-created_at')
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user).order_by('-created_at')
 
     @action(detail=True, methods=['patch'])
     def update_status(self, request, pk=None):
@@ -161,7 +161,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         return Response({'message': f'Status updated to {new_status}'})
 
-    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
+    @action(detail=False, methods=['post'], permission_classes=[IsAdminUser])
     def create_labels(self, request):
         order_ids = request.data.get("order_ids", [])
         updated = []
@@ -431,7 +431,7 @@ def selective_checkout(request):
     return Response({"order_id": order.id, "total_price": total})
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def create_order(request):
     jet = JetService()
     detail = request.data['detail'] 
@@ -440,7 +440,7 @@ def create_order(request):
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def cancel_order(request):
     jet = JetService()
     detail = request.data['detail'] 
@@ -449,7 +449,7 @@ def cancel_order(request):
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def track_order(request):
     jet = JetService()
     resp = jet.track(awb=request.data['awb'])
@@ -457,7 +457,7 @@ def track_order(request):
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def check_tariff(request):
     jet = JetService()
     resp = jet.tariff_check(data=request.data)
