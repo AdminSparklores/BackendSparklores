@@ -131,13 +131,11 @@ class GiftSetOrBundleMonthlySpecialAdmin(admin.ModelAdmin):
 
 class OrderItemCharmInline(admin.TabularInline):
     model = OrderItemCharm
-    extra = 0
+    extra = 1
 
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
-    extra = 0
-    readonly_fields = ['product', 'gift_set', 'quantity']
-    show_change_link = True
+    extra = 1
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
@@ -146,6 +144,22 @@ class OrderAdmin(admin.ModelAdmin):
     search_fields = ('user__email', 'id')
     inlines = [OrderItemInline]
     readonly_fields = ('total_price', 'created_at', 'updated_at')
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+
+        total = 0
+        for item in obj.items.all():
+            if item.product:
+                total += (item.product.price or 0) * item.quantity
+            if item.gift_set:
+                total += (item.gift_set.price or 0) * item.quantity
+            for charm in item.charms.all():
+                if charm.charm:
+                    total += charm.charm.price or 0
+
+        obj.total_price = total
+        obj.save()
 
 @admin.register(OrderItem)
 class OrderItemAdmin(admin.ModelAdmin):
@@ -156,4 +170,4 @@ class OrderItemAdmin(admin.ModelAdmin):
 @admin.register(OrderItemCharm)
 class OrderItemCharmAdmin(admin.ModelAdmin):
     list_display = ('id', 'order_item', 'charm')
-    search_fields = ('order_item__order__id', 'charm__name')
+    search_fields = ('order_item', 'charm__name')
