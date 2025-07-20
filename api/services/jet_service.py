@@ -13,19 +13,16 @@ class JetService:
     Payload & signature dikelola otomatis di sini.
     """
     # Base URLs
-    ORDER_BASE_URL = "https://demo-ecommerce.inuat-jntexpress.id"
-    GENERAL_BASE_URL = "https://demo-general.inuat-jntexpress.id"
-
-    midtrans_server_key = os.getenv("MIDTRANS_SERVER_KEY")
-    midtrans_is_production = os.getenv("MIDTRANS_IS_PRODUCTION", "False").lower()
+    ORDER_BASE_URL = os.getenv("JNT_EXPRESS_ORDER_BASE_URL", "")
+    GENERAL_BASE_URL = os.getenv("JNT_EXPRESS_GENERAL_BASE_URL", "")
 
     # Credentials
-    ORDER_KEY = ""
-    ORDER_USERNAME = ""
-    ORDER_API_KEY = ""
-    TARIFF_KEY = ""
-    TRACK_PASSWORD = ""
-    ECOMPANY_ID = ""
+    ORDER_KEY = os.getenv("JNT_EXPRESS_ORDER_KEY", "")
+    ORDER_USERNAME = os.getenv("JNT_EXPRESS_ORDER_USERNAME", "")
+    ORDER_API_KEY = os.getenv("JNT_EXPRESS_ORDER_API_KEY", "")
+    TARIFF_KEY = os.getenv("JNT_EXPRESS_TARIF_KEY", "")
+    TRACK_PASSWORD = os.getenv("JNT_EXPRESS_TRACK_PASSWORD", "")
+    ECOMPANY_ID = os.getenv("JNT_EXPRESS_ECOMPANY_ID", "")
 
     def _basic_auth_header(self):
         token = f"{self.ECOMPANY_ID}:{self.TRACK_PASSWORD}"
