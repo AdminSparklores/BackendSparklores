@@ -9,7 +9,8 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
-from .models import CartItemCharm, Charm, DiscountCampaign, GiftSetOrBundleMonthlySpecial, NewsletterSubscriber, OrderItem, OrderItemCharm, PhotoGallery, Review, Product, Cart, CartItem, Order, VideoContent, PageBanner #Payment
+from django.core.mail import send_mail
+from .models import CartItemCharm, Charm, DiscountCampaign, GiftSetOrBundleMonthlySpecial, NewsletterSubscriber, OrderItem, OrderItemCharm, PhotoGallery, Review, Product, Cart, CartItem, Order, VideoContent, PageBanner, ReviewToken
 from .serializers import (
     CharmSerializer, DiscountCampaignSerializer, GiftSetOrBundleMonthlySpecialProductSerializer, ProductSerializer,
     CartSerializer, CartItemSerializer,
@@ -118,6 +119,50 @@ class ReviewViewSet(viewsets.ModelViewSet):
     search_fields = ['user_name', 'products__name']
     ordering_fields = ['rating', 'uploaded_at']
 
+@api_view(['GET'])
+def validate_review_token(request):
+    token_str = request.query_params.get('token')
+    try:
+        token = ReviewToken.objects.get(token=token_str)
+        if not token.is_valid():
+            return Response({'error': 'Token expired or used'}, status=403)
+        return Response({
+            'user_id': token.user.id,
+            'order_id': token.order.id
+        })
+    except ReviewToken.DoesNotExist:
+        return Response({'error': 'Invalid token'}, status=404)
+
+
+@api_view(['POST'])
+def submit_review_via_token(request):
+    token_str = request.data.get('token')
+    rating = request.data.get('rating')
+    comment = request.data.get('comment')
+    product_id = request.data.get('product_id')
+
+    try:
+        token = ReviewToken.objects.get(token=token_str)
+        if not token.is_valid():
+            return Response({'error': 'Token expired or used'}, status=403)
+
+        product = Product.objects.get(id=product_id)
+        Review.objects.create(user=token.user, product=product, rating=rating, comment=comment)
+        token.used = True
+        token.save()
+        return Response({'message': 'Review submitted!'})
+    except Exception as e:
+        return Response({'error': str(e)}, status=400)
+
+def send_review_email(order):
+    token = ReviewToken.objects.create(user=order.user, order=order)
+    review_url = f"https://yourdomain.com/review/product/?token={token.token}"
+
+    subject = "Berikan ulasan untuk pesananmu"
+    message = f"Halo {order.user.email},\n\nKlik link ini untuk beri review: {review_url}"
+    
+    send_mail(subject, message, 'no-reply@yourdomain.com', [order.user.email])
+
 class NewsletterSubscriberViewSet(viewsets.ModelViewSet):
     queryset = NewsletterSubscriber.objects.all()
     serializer_class = NewsletterSubscriberSerializer
@@ -125,7 +170,7 @@ class NewsletterSubscriberViewSet(viewsets.ModelViewSet):
 
 class AdminOrderTableView(ListAPIView):
     serializer_class = OrderTableSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [AllowAny] #[IsAdminUser]
     queryset = Order.objects.all().order_by('-created_at')
 
     def get_queryset(self):
@@ -462,3 +507,19 @@ def check_tariff(request):
     jet = JetService()
     resp = jet.tariff_check(data=request.data)
     return Response(resp)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def print_waybill(request):
+    jet = JetService()
+    billcode = request.data.get("billcode")
+
+    if not billcode:
+        return Response({"error": "billcode is required"}, status=400)
+
+    try:
+        resp = jet.print_waybill(billcode=billcode)
+        return Response(resp)
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)

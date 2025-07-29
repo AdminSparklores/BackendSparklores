@@ -1,9 +1,11 @@
 import os
+import uuid
 from django.db import models
 from django.utils.text import slugify
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from datetime import timedelta
 
 User = get_user_model()
 
@@ -197,9 +199,19 @@ class NewsletterSubscriber(models.Model):
     def __str__(self):
         return self.user.email
 
+class ReviewToken(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE)
+    token = models.UUIDField(default=uuid.uuid4, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    used = models.BooleanField(default=False)
+
+    def is_valid(self):
+        return not self.used and timezone.now() < self.created_at + timedelta(days=2)
+
 class Review(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
     user_name = models.CharField(max_length=100)
+    user_email = models.EmailField(max_length=255, blank=True, null=True)
     rating = models.IntegerField(choices=[(i, i) for i in range(1, 6)])
     review_text = models.TextField(blank=True, null=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)

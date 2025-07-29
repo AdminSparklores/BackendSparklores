@@ -118,3 +118,45 @@ class JetService:
         resp = requests.post(url, data=payload, headers=headers)
         resp.raise_for_status()
         return resp.json()
+
+    def print_waybill(self, billcode: str, printmode: str = "1", print_type: str = "1") -> dict:
+        """
+        Generate waybill print link.
+        :param billcode: AWB number
+        :param printmode: Default "1" = single print link
+        :param print_type: Default "1"
+        """
+        url = f"{self.GENERAL_BASE_URL}/jandt_order_web/labels/labelsAction!getPrintUrl.action"
+
+        data = {
+            "customerid": self.ECOMPANY_ID,
+            "billcode": billcode,
+            "printmode": printmode,
+            "printType": print_type
+        }
+
+        data_json = json.dumps(data, separators=(',', ':'), ensure_ascii=False)
+        raw = data_json + self.TRACK_PASSWORD
+        md5_hash = hashlib.md5(raw.encode()).digest()
+        data_digest = base64.b64encode(md5_hash).decode()
+
+        payload = {
+            "logistics_interface": data_json,
+            "data_digest": data_digest,
+            "msg_type": "ROTAPRINT",
+            "eccompanyid": self.ECOMPANY_ID
+        }
+
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+
+        print("===== DEBUG PRINT WAYBILL J&T =====")
+        print("Endpoint:", url)
+        print("logistics_interface:", data_json)
+        print("data_digest:", data_digest)
+        print("msg_type:", "ROTAPRINT")
+        print("eccompanyid:", self.ECOMPANY_ID)
+        print("============================")
+
+        resp = requests.post(url, data=payload, headers=headers)
+        resp.raise_for_status()
+        return resp.json()
