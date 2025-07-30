@@ -157,7 +157,7 @@ WSGI_APPLICATION = 'sparklore.wsgi.application'
 
 ENV = os.environ.get('DJANGO_ENV', 'development')
 
-if ENV == 'uhuy':
+if ENV == 'production':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
