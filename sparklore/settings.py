@@ -29,7 +29,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True#env.bool('DEBUG', default=False)
+DEBUG = env.bool('DEBUG', default=False)
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
@@ -40,18 +40,18 @@ CORS_ALLOWED_ORIGINS = [
     "https://sparkloreofficial.com",
 ]
 ALLOWED_HOSTS = [h.strip().rstrip('.') for h in env.list('ALLOWED_HOSTS', default=['localhost'])]
-#CSRF_TRUSTED_ORIGINS = [
-#    'http://localhost:5173',
-#    'http://127.0.0.1:5173',
-#    'https://sparkloreofficial.com',
-#    'https://www.sparkloreofficial.com',
-#    'http://sparkloreofficial.com',
-#    'http://localhost',
-#    'http://localhost:5173',
-#    '168.231.119.186',
-#    'www.sparkloreofficial.com',
-#    'sparkloreofficial.com',
-#]
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'https://sparkloreofficial.com',
+    'https://www.sparkloreofficial.com',
+    'http://sparkloreofficial.com',
+    'http://localhost',
+    'http://localhost:5173',
+    '168.231.119.186',
+    'www.sparkloreofficial.com',
+    'sparkloreofficial.com',
+]
 
 CORS_ALLOW_HEADERS = [
     "accept",
