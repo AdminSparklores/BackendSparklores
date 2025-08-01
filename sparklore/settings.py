@@ -48,9 +48,9 @@ CSRF_TRUSTED_ORIGINS = [
     'http://sparkloreofficial.com',
     'http://localhost',
     'http://localhost:5173',
-    '168.231.119.186',
-    'www.sparkloreofficial.com',
-    'sparkloreofficial.com',
+    #'168.231.119.186',
+    #'www.sparkloreofficial.com',
+    #'sparkloreofficial.com',
 ]
 
 CORS_ALLOW_HEADERS = [
