@@ -1,18 +1,18 @@
-# # Python
-# __pycache__/
-# *.py[cod]
-# *.pyo
-# *.pyd
-# *.pyc
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
 
-# # Django
-# *.log
-# *.pot
-# *.pyc
+# Django
+*.log
+*.pot
+*.pyc
 
 # Environment variables
 .env
 
-# # # Migrations
-# **/migrations/*.py
-# !**/migrations/__init__.py
+# Migrations
+**/migrations/*.py
+!**/migrations/__init__.py

@@ -476,7 +476,7 @@ def selective_checkout(request):
     return Response({"order_id": order.id, "total_price": total})
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def create_order(request):
     jet = JetService()
     detail = request.data['detail'] 
@@ -485,7 +485,7 @@ def create_order(request):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def cancel_order(request):
     jet = JetService()
     detail = request.data['detail'] 
@@ -494,7 +494,7 @@ def cancel_order(request):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def track_order(request):
     jet = JetService()
     resp = jet.track(awb=request.data['awb'])
@@ -502,7 +502,7 @@ def track_order(request):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def check_tariff(request):
     jet = JetService()
     resp = jet.tariff_check(data=request.data)
