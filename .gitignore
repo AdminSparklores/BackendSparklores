@@ -19,3 +19,7 @@ __pycache__/
 
 # Data
 Scrapping_Data.csv
+
+# Database
+*.sqlite3
+
