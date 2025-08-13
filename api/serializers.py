@@ -2,7 +2,7 @@ from django.utils import timezone
 from datetime import timedelta
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from .models import Charm, GiftSetOrBundleMonthlySpecial, OrderItem, OrderItemCharm, Product, Order, Review, NewsletterSubscriber, CartItem, Cart, CartItemCharm, VideoContent, ProductImage, PageBanner, PhotoGallery, DiscountedItem, DiscountCampaign
+from .models import Charm, GiftSetOrBundleMonthlySpecial, JNTLocation, OrderItem, OrderItemCharm, Product, Order, Review, NewsletterSubscriber, CartItem, Cart, CartItemCharm, VideoContent, ProductImage, PageBanner, PhotoGallery, DiscountedItem, DiscountCampaign
 from django.core.mail import send_mail
 from django.conf import settings
 import textwrap
@@ -318,3 +318,8 @@ class CartItemSerializer(serializers.ModelSerializer):
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True)
     class Meta: model = Cart; fields = ['id','items']
+
+class JNTLocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = JNTLocation
+        fields = '__all__'

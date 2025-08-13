@@ -349,3 +349,24 @@ class DiscountedItem(models.Model):
             raise ValidationError("Diskon persentase harus antara 0-100%.")
         if self.discount_type == 'amount' and self.discount_value < 0:
             raise ValidationError("Diskon nominal tidak boleh negatif.")
+
+class JNTLocation(models.Model):
+    provinsi = models.CharField(max_length=100)
+    kabupaten_kota = models.CharField(max_length=150)
+    kecamatan = models.CharField(max_length=150)
+
+    provinsi_jnt = models.CharField(max_length=150)
+    kota_jnt = models.CharField(max_length=150)
+    kode_kota_jnt = models.CharField(max_length=50)  # origin/destination code
+
+    kecamatan_jnt = models.CharField(max_length=150)
+    kode_jnt_receiver_area = models.CharField(max_length=50)
+
+    notes = models.TextField(blank=True, null=True)
+
+    class Meta:
+        verbose_name = "JNT Location"
+        verbose_name_plural = "JNT Locations"
+
+    def __str__(self):
+        return f"{self.provinsi} - {self.kabupaten_kota} - {self.kecamatan}"

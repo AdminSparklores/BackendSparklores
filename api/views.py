@@ -1,6 +1,9 @@
 from collections import Counter
+from .services.order_service import send_order_confirmation_email, create_order
+from .services.midtrans_services import create_midtrans_token
 from .services.jet_service import JetService
-from rest_framework import viewsets, status, filters
+from .services.review_service import create_and_send_review_token
+from rest_framework import viewsets, status, filters, generics
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
@@ -10,14 +13,14 @@ from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from django.core.mail import send_mail
-from .models import CartItemCharm, Charm, DiscountCampaign, GiftSetOrBundleMonthlySpecial, NewsletterSubscriber, OrderItem, OrderItemCharm, PhotoGallery, Review, Product, Cart, CartItem, Order, VideoContent, PageBanner, ReviewToken
+from .models import JNTLocation, CartItemCharm, Charm, DiscountCampaign, GiftSetOrBundleMonthlySpecial, NewsletterSubscriber, OrderItem, OrderItemCharm, PhotoGallery, Review, Product, Cart, CartItem, Order, VideoContent, PageBanner, ReviewToken
 from .serializers import (
     CharmSerializer, DiscountCampaignSerializer, GiftSetOrBundleMonthlySpecialProductSerializer, ProductSerializer,
     CartSerializer, CartItemSerializer,
     OrderSerializer, NewsletterSubscriberSerializer,
     ReviewSerializer, VideoContentSerializer,
     PageBannerSerializer, PhotoGalerySerializer,
-    OrderTableSerializer
+    OrderTableSerializer, JNTLocationSerializer
 )
 from django.db import transaction
 from django.utils import timezone
@@ -133,35 +136,59 @@ def validate_review_token(request):
     except ReviewToken.DoesNotExist:
         return Response({'error': 'Invalid token'}, status=404)
 
-
 @api_view(['POST'])
 def submit_review_via_token(request):
     token_str = request.data.get('token')
     rating = request.data.get('rating')
-    comment = request.data.get('comment')
-    product_id = request.data.get('product_id')
+    review_text = request.data.get('review_text', "")
+    product_ids = request.data.get('product_ids', [])
+    charm_ids = request.data.get('charm_ids', [])
+    gift_set_ids = request.data.get('gift_set_ids', [])
 
     try:
         token = ReviewToken.objects.get(token=token_str)
         if not token.is_valid():
             return Response({'error': 'Token expired or used'}, status=403)
 
-        product = Product.objects.get(id=product_id)
-        Review.objects.create(user=token.user, product=product, rating=rating, comment=comment)
+        # Ambil order
+        order = token.order
+
+        # Validasi bahwa item yang direview memang ada di order
+        allowed_products = list(order.items.filter(product__isnull=False).values_list('product_id', flat=True))
+        allowed_giftsets = list(order.items.filter(gift_set__isnull=False).values_list('gift_set_id', flat=True))
+        allowed_charms = list(order.items.values_list('charms__charm_id', flat=True))
+
+        if not set(product_ids).issubset(set(allowed_products)):
+            return Response({'error': 'Beberapa produk tidak termasuk dalam pesanan'}, status=400)
+        if not set(gift_set_ids).issubset(set(allowed_giftsets)):
+            return Response({'error': 'Beberapa gift set tidak termasuk dalam pesanan'}, status=400)
+        if not set(charm_ids).issubset(set(allowed_charms)):
+            return Response({'error': 'Beberapa charms tidak termasuk dalam pesanan'}, status=400)
+
+        # Buat review
+        review = Review.objects.create(
+            user_name=token.user.get_full_name() or token.user.username,
+            user_email=token.user.email,
+            rating=rating,
+            review_text=review_text,
+            order=order
+        )
+
+        if product_ids:
+            review.products.set(product_ids)
+        if gift_set_ids:
+            review.gift_sets.set(gift_set_ids)
+        if charm_ids:
+            review.charms.set(charm_ids)
+
         token.used = True
         token.save()
+
         return Response({'message': 'Review submitted!'})
+    except ReviewToken.DoesNotExist:
+        return Response({'error': 'Invalid token'}, status=404)
     except Exception as e:
         return Response({'error': str(e)}, status=400)
-
-def send_review_email(order):
-    token = ReviewToken.objects.create(user=order.user, order=order)
-    review_url = f"https://yourdomain.com/review/product/?token={token.token}"
-
-    subject = "Berikan ulasan untuk pesananmu"
-    message = f"Halo {order.user.email},\n\nKlik link ini untuk beri review: {review_url}"
-    
-    send_mail(subject, message, 'no-reply@yourdomain.com', [order.user.email])
 
 class NewsletterSubscriberViewSet(viewsets.ModelViewSet):
     queryset = NewsletterSubscriber.objects.all()
@@ -370,6 +397,9 @@ def checkout(request):
         order.total_price = total
         order.save()
 
+        send_order_confirmation_email(order)
+        create_and_send_review_token(order)
+
     return Response({"order_id": order.id, "total_price": total})
 
 @api_view(['POST'])
@@ -422,6 +452,7 @@ def direct_checkout(request):
         order_item.save()
         order.total_price = total
         order.save()
+        create_and_send_review_token(order)
 
     return Response({"order_id": order.id, "total_price": total})
 
@@ -472,6 +503,7 @@ def selective_checkout(request):
 
         order.total_price = total
         order.save()
+        create_and_send_review_token(order)
 
     return Response({"order_id": order.id, "total_price": total})
 
@@ -523,3 +555,7 @@ def print_waybill(request):
         return Response(resp)
     except Exception as e:
         return Response({"error": str(e)}, status=500)
+
+class JNTLocationListView(generics.ListAPIView):
+    queryset = JNTLocation.objects.all()
+    serializer_class = JNTLocationSerializer
