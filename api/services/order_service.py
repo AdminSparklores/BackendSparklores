@@ -4,7 +4,7 @@ from django.core.mail import send_mail
 from django.urls import reverse
 from collections import Counter
 from ..models import Order, OrderItem, OrderItemCharm, CartItem, ReviewToken
-from midtrans_services import create_midtrans_token
+# from midtrans_services import create_midtrans_token
 
 @transaction.atomic
 def create_order(user, shipping_address, cart_items):
@@ -52,7 +52,7 @@ def create_order(user, shipping_address, cart_items):
     order.save()
 
     # Buat token midtrans
-    midtrans_token = create_midtrans_token(order)
+    # midtrans_token = create_midtrans_token(order)
     
     # Buat review token & kirim email
     send_order_confirmation_email(order)
