@@ -348,60 +348,62 @@ def checkout(request):
     if not cart.items.exists():
         return Response({"error": "Cart is empty"}, status=400)
 
-    with transaction.atomic():
-        order = Order.objects.create(
-            user=request.user,
-            payment_status='pending',
-            fulfillment_status='awaiting_shipment',
-            total_price=0,
-            shipping_address=request.data.get("shipping_address", ""),
-        )
-
-        total = 0
-        for item in cart.items.all():
-            order_item = OrderItem.objects.create(
-                order=order,
-                product=item.product,
-                gift_set=item.gift_set,
-                quantity=item.quantity,
-                message=item.message
+    try:
+        with transaction.atomic():
+            order = Order.objects.create(
+                user=request.user,
+                payment_status='pending',
+                fulfillment_status='awaiting_shipment',
+                total_price=0,
+                shipping_address=request.data.get("shipping_address", ""),
             )
 
-            # Kurangi stock & hitung total
-            if item.product:
-                item.product.stock -= item.quantity
-                item.product.save()
-                total += float(item.product.price) * item.quantity
+            total = 0
+            for item in cart.items.all():
+                order_item = OrderItem.objects.create(
+                    order=order,
+                    product=item.product,
+                    gift_set=item.gift_set,
+                    quantity=item.quantity,
+                    message=item.message
+                )
 
-            elif item.gift_set:
-                item.gift_set.stock -= item.quantity
-                item.gift_set.save()
-                total += float(item.gift_set.price) * item.quantity
+                if item.product:
+                    item.product.stock -= item.quantity
+                    item.product.save()
+                    total += float(item.product.price) * item.quantity
 
-            # Jika charms only
-            if item.charms.exists():
-                charm_counts = Counter()
-                for cc in CartItemCharm.objects.filter(item=item):
-                    OrderItemCharm.objects.create(order_item=order_item, charm=cc.charm)
-                    charm_counts[cc.charm.id] += cc.quantity
-                    total += float(cc.charm.price) * cc.quantity
+                elif item.gift_set:
+                    item.gift_set.stock -= item.quantity
+                    item.gift_set.save()
+                    total += float(item.gift_set.price) * item.quantity
 
-            elif item.product is None and item.gift_set is None:
-                # charms only (tanpa product/giftset)
-                for cc in CartItemCharm.objects.filter(item=item):
-                    OrderItemCharm.objects.create(order_item=order_item, charm=cc.charm)
-                    total += float(cc.charm.price) * cc.quantity
+                if item.charms.exists():
+                    for cc in CartItemCharm.objects.filter(item=item):
+                        OrderItemCharm.objects.create(order_item=order_item, charm=cc.charm)
+                        total += float(cc.charm.price) * cc.quantity
 
-            item.delete()
+                elif item.product is None and item.gift_set is None:
+                    for cc in CartItemCharm.objects.filter(item=item):
+                        OrderItemCharm.objects.create(order_item=order_item, charm=cc.charm)
+                        total += float(cc.charm.price) * cc.quantity
 
-        order.total_price = total
-        order.save()
+                item.delete()
 
-        send_order_confirmation_email(order)
-        create_and_send_review_token(order)
+            order.total_price = total
+            order.save()
 
-    return Response({"order_id": order.id, "total_price": total})
+            # Jadwalkan email & token setelah commit sukses
+            transaction.on_commit(lambda: send_order_confirmation_email(order))
+            transaction.on_commit(lambda: create_and_send_review_token(order))
 
+        return Response({"order_id": order.id, "total_price": total})
+
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        return Response({"error": str(e)}, status=500)
+    
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def direct_checkout(request):
