@@ -13,6 +13,9 @@ __pycache__/
 # Environment variables
 .env
 
-# # Migrations
+# Migrations
 **/migrations/*.py
 !**/migrations/__init__.py
+
+# Data
+Scrapping_Data.csv
