@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Charm, DiscountedItem, GiftSetOrBundleMonthlySpecial, OrderItem, OrderItemCharm, Product, Order, Review, NewsletterSubscriber, Cart, CartItem, CartItemCharm, ProductImage, VideoContent, PageBanner, PhotoGallery, DiscountCampaign
+from .models import Charm, DiscountedItem, GiftSetOrBundleMonthlySpecial, JNTLocation, OrderItem, OrderItemCharm, Product, Order, Review, NewsletterSubscriber, Cart, CartItem, CartItemCharm, ProductImage, ReviewToken, VideoContent, PageBanner, PhotoGallery, DiscountCampaign
 
 @admin.register(Charm)
 class CharmAdmin(admin.ModelAdmin):
@@ -27,6 +27,18 @@ class ProductAdmin(admin.ModelAdmin):
 class ReviewAdmin(admin.ModelAdmin):
     list_display = ('user_name', 'rating', 'uploaded_at')
     list_filter = ('rating',)
+
+@admin.register(ReviewToken)
+class ReviewTokenAdmin(admin.ModelAdmin):
+    list_display = ('user', 'order', 'token', 'created_at', 'used', 'is_valid_display')
+    list_filter = ('used', 'created_at')
+    search_fields = ('user__email', 'order__id', 'token')
+    readonly_fields = ('token', 'created_at')
+
+    def is_valid_display(self, obj):
+        return obj.is_valid()
+    is_valid_display.boolean = True
+    is_valid_display.short_description = "Masih Valid?"
 
 @admin.register(NewsletterSubscriber)
 class NewsletterSubscriberAdmin(admin.ModelAdmin):
@@ -171,3 +183,12 @@ class OrderItemAdmin(admin.ModelAdmin):
 class OrderItemCharmAdmin(admin.ModelAdmin):
     list_display = ('id', 'order_item', 'charm')
     search_fields = ('order_item', 'charm__name')
+
+@admin.register(JNTLocation)
+class JNTLocationAdmin(admin.ModelAdmin):
+    list_display = ('provinsi', 'kabupaten_kota', 'kecamatan',
+                    'provinsi_jnt', 'kota_jnt', 'kode_kota_jnt',
+                    'kecamatan_jnt', 'kode_jnt_receiver_area')
+    list_filter = ('provinsi', 'kabupaten_kota', 'provinsi_jnt')
+    search_fields = ('provinsi', 'kabupaten_kota', 'kecamatan',
+                     'provinsi_jnt', 'kota_jnt', 'kecamatan_jnt')

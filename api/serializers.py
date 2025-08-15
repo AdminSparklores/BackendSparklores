@@ -106,6 +106,7 @@ class ReviewSerializer(serializers.ModelSerializer):
     charms = serializers.PrimaryKeyRelatedField(many=True, queryset=Charm.objects.all(), required=False)
     gift_sets = serializers.PrimaryKeyRelatedField(many=True, queryset=GiftSetOrBundleMonthlySpecial.objects.all(), required=False)
     user_name = serializers.CharField(source='user.email', read_only=True)
+    image = serializers.ImageField(required=False)
 
     class Meta:
         model = Review

@@ -144,6 +144,7 @@ def submit_review_via_token(request):
     product_ids = request.data.get('product_ids', [])
     charm_ids = request.data.get('charm_ids', [])
     gift_set_ids = request.data.get('gift_set_ids', [])
+    image = request.FILES.get('image')
 
     try:
         token = ReviewToken.objects.get(token=token_str)
@@ -171,6 +172,7 @@ def submit_review_via_token(request):
             user_email=token.user.email,
             rating=rating,
             review_text=review_text,
+            image=image,
             order=order
         )
 
