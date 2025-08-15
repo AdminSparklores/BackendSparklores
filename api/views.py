@@ -407,56 +407,64 @@ def checkout(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def direct_checkout(request):
-    with transaction.atomic():
-        order = Order.objects.create(
-            user=request.user,
-            payment_status='pending',
-            fulfillment_status='awaiting_shipment',
-            total_price=0,
-            shipping_address=request.data.get("shipping_address", ""),
-        )
+    try:
+        with transaction.atomic():
+            order = Order.objects.create(
+                user=request.user,
+                payment_status='pending',
+                fulfillment_status='awaiting_shipment',
+                total_price=0,
+                shipping_address=request.data.get("shipping_address", ""),
+            )
 
-        quantity = int(request.data.get("quantity", 1))
-        charms = request.data.get("charms", [])
+            quantity = int(request.data.get("quantity", 1))
+            charms = request.data.get("charms", [])
 
-        order_item = OrderItem.objects.create(
-            order=order,
-            product=None,
-            gift_set=None,
-            quantity=quantity,
-            message=order_item.message
-        )
+            order_item = OrderItem.objects.create(
+                order=order,
+                product=None,
+                gift_set=None,
+                quantity=quantity,
+                message=order_item.message
+            )
 
-        total = 0
+            total = 0
 
-        if "product" in request.data:
-            product = get_object_or_404(Product, id=request.data["product"])
-            order_item.product = product
-            product.stock -= quantity
-            product.save()
-            total += float(product.price) * quantity
+            if "product" in request.data:
+                product = get_object_or_404(Product, id=request.data["product"])
+                order_item.product = product
+                product.stock -= quantity
+                product.save()
+                total += float(product.price) * quantity
 
-        elif "gift_set" in request.data:
-            gift_set = get_object_or_404(GiftSetOrBundleMonthlySpecial, id=request.data["gift_set"])
-            order_item.gift_set = gift_set
-            gift_set.stock -= quantity
-            gift_set.save()
-            total += float(gift_set.price) * quantity
+            elif "gift_set" in request.data:
+                gift_set = get_object_or_404(GiftSetOrBundleMonthlySpecial, id=request.data["gift_set"])
+                order_item.gift_set = gift_set
+                gift_set.stock -= quantity
+                gift_set.save()
+                total += float(gift_set.price) * quantity
 
-        if charms:
-            charm_counts = Counter(charms)
-            for charm_id, qty in charm_counts.items():
-                charm = get_object_or_404(Charm, id=charm_id)
-                for _ in range(qty):
-                    OrderItemCharm.objects.create(order_item=order_item, charm=charm)
-                total += float(charm.price) * qty
+            if charms:
+                charm_counts = Counter(charms)
+                for charm_id, qty in charm_counts.items():
+                    charm = get_object_or_404(Charm, id=charm_id)
+                    for _ in range(qty):
+                        OrderItemCharm.objects.create(order_item=order_item, charm=charm)
+                    total += float(charm.price) * qty
 
-        order_item.save()
-        order.total_price = total
-        order.save()
-        create_and_send_review_token(order)
+            order_item.save()
+            order.total_price = total
+            order.save()
 
-    return Response({"order_id": order.id, "total_price": total})
+            transaction.on_commit(lambda: send_order_confirmation_email(order))
+            transaction.on_commit(lambda: create_and_send_review_token(order))
+
+        return Response({"order_id": order.id, "total_price": total})
+
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        return Response({"error": str(e)}, status=500)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -465,49 +473,56 @@ def selective_checkout(request):
     if not cart_item_ids:
         return Response({"error": "Provide cart_item_ids"}, status=400)
 
-    with transaction.atomic():
-        order = Order.objects.create(
-            user=request.user,
-            payment_status='pending',
-            fulfillment_status='awaiting_shipment',
-            total_price=0,
-            shipping_address=request.data.get("shipping_address", ""),
-        )
-
-        total = 0
-        for cid in cart_item_ids:
-            item = get_object_or_404(CartItem, id=cid, cart__user=request.user)
-
-            oi = OrderItem.objects.create(
-                order=order,
-                product=item.product,
-                gift_set=item.gift_set,
-                quantity=item.quantity,
-                message=item.message
+    try:
+        with transaction.atomic():
+            order = Order.objects.create(
+                user=request.user,
+                payment_status='pending',
+                fulfillment_status='awaiting_shipment',
+                total_price=0,
+                shipping_address=request.data.get("shipping_address", ""),
             )
 
-            if item.product:
-                item.product.stock -= item.quantity
-                item.product.save()
-                total += float(item.product.price) * item.quantity
+            total = 0
+            for cid in cart_item_ids:
+                item = get_object_or_404(CartItem, id=cid, cart__user=request.user)
 
-            elif item.gift_set:
-                item.gift_set.stock -= item.quantity
-                item.gift_set.save()
-                total += float(item.gift_set.price) * item.quantity
+                oi = OrderItem.objects.create(
+                    order=order,
+                    product=item.product,
+                    gift_set=item.gift_set,
+                    quantity=item.quantity,
+                    message=item.message
+                )
 
-            # charms
-            for cc in CartItemCharm.objects.filter(item=item):
-                OrderItemCharm.objects.create(order_item=oi, charm=cc.charm)
-                total += float(cc.charm.price) * cc.quantity
+                if item.product:
+                    item.product.stock -= item.quantity
+                    item.product.save()
+                    total += float(item.product.price) * item.quantity
 
-            item.delete()
+                elif item.gift_set:
+                    item.gift_set.stock -= item.quantity
+                    item.gift_set.save()
+                    total += float(item.gift_set.price) * item.quantity
 
-        order.total_price = total
-        order.save()
-        create_and_send_review_token(order)
+                # charms
+                for cc in CartItemCharm.objects.filter(item=item):
+                    OrderItemCharm.objects.create(order_item=oi, charm=cc.charm)
+                    total += float(cc.charm.price) * cc.quantity
 
-    return Response({"order_id": order.id, "total_price": total})
+                item.delete()
+
+            order.total_price = total
+            order.save()
+            transaction.on_commit(lambda: send_order_confirmation_email(order))
+            transaction.on_commit(lambda: create_and_send_review_token(order))
+
+        return Response({"order_id": order.id, "total_price": total})
+
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        return Response({"error": str(e)}, status=500)
 
 @api_view(['POST'])
 @permission_classes([AllowAny])

@@ -60,7 +60,7 @@ def create_order(user, shipping_address, cart_items):
     return order, midtrans_token
 
 def send_order_confirmation_email(order):
-    subject = f"Terima kasih atas pesanan Anda - Order #{order.id}"
+    subject = f"Terima kasih atas pesanan Anda"
         
     message = f"""
 Halo {order.user.first_name or order.user.username},
