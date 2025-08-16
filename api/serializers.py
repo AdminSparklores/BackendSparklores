@@ -140,7 +140,12 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = '__all__'
+        fields = [
+            'id', 'user_name', 'user_email', 'order',
+            'rating', 'review_text', 'image', 'uploaded_at',
+            'products', 'charms', 'gift_sets',
+            'product_ids', 'charm_ids', 'gift_set_ids'
+        ]
 
     def create(self, validated_data):
         products = validated_data.pop('product_ids', [])
