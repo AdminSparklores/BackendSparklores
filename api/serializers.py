@@ -118,7 +118,7 @@ class ReviewSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
 
         review = Review.objects.create(
-            user_name=user.get_full_name() or user.username,
+            user_name=user.email or user.username,
             user_email=user.email,
             **validated_data
         )

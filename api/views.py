@@ -168,7 +168,7 @@ def submit_review_via_token(request):
         serializer = ReviewSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             review = serializer.save(
-                user_name=token.user.get_full_name() or token.user.username,
+                user_name=token.user.email or token.user.username,
                 user_email=token.user.email,
                 order=order
             )
