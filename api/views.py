@@ -164,14 +164,14 @@ def submit_review_via_token(request):
         if not set(charm_ids).issubset(set(allowed_charms)):
             return Response({'error': 'Beberapa charms tidak termasuk dalam pesanan'}, status=400)
 
-        # Gunakan serializer agar M2M tersimpan
+        data = request.data.copy()
+        data['user_name'] = token.user.get_full_name() or token.user.username
+        data['user_email'] = token.user.email
+        data['order'] = order.id
+
         serializer = ReviewSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            review = serializer.save(
-                user_name=token.user.email or token.user.username,
-                user_email=token.user.email,
-                order=order
-            )
+            review = serializer.save()
             token.used = True
             token.save()
             return Response(ReviewSerializer(review).data, status=201)

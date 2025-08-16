@@ -101,42 +101,6 @@ class ProductSerializer(serializers.ModelSerializer):
             
         return data
 
-class ReviewSerializer(serializers.ModelSerializer):
-    products = serializers.PrimaryKeyRelatedField(many=True, queryset=Product.objects.all(), required=False)
-    charms = serializers.PrimaryKeyRelatedField(many=True, queryset=Charm.objects.all(), required=False)
-    gift_sets = serializers.PrimaryKeyRelatedField(many=True, queryset=GiftSetOrBundleMonthlySpecial.objects.all(), required=False)
-    image = serializers.ImageField(required=False)
-
-    class Meta:
-        model = Review
-        fields = '__all__'
-
-    def create(self, validated_data):
-        products = validated_data.pop('products', [])
-        charms = validated_data.pop('charms', [])
-        gift_sets = validated_data.pop('gift_sets', [])
-        user = self.context['request'].user
-
-        review = Review.objects.create(
-            user_name=user.email or user.username,
-            user_email=user.email,
-            **validated_data
-        )
-        
-        if products:
-            review.products.set(products)
-        if charms:
-            review.charms.set(charms)
-        if gift_sets:
-            review.gift_sets.set(gift_sets)
-
-        return review
-
-    def validate_rating(self, value):
-        if value < 1 or value > 5:
-            raise serializers.ValidationError("Rating harus antara 1 dan 5.")
-        return value
-
 class ProductInGiftSetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
@@ -155,6 +119,56 @@ class GiftSetOrBundleMonthlySpecialProductSerializer(serializers.ModelSerializer
         if request and obj.image:
             return request.build_absolute_uri(obj.image.url)
         return None
+
+class ReviewSerializer(serializers.ModelSerializer):
+    products = ProductSerializer(many=True, read_only=True)
+    charms = CharmSerializer(many=True, read_only=True)
+    gift_sets = GiftSetOrBundleMonthlySpecialProductSerializer(many=True, read_only=True)
+
+    # supaya saat create tetap bisa pakai id
+    product_ids = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=Product.objects.all(), write_only=True, required=False
+    )
+    charm_ids = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=Charm.objects.all(), write_only=True, required=False
+    )
+    gift_set_ids = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=GiftSetOrBundleMonthlySpecial.objects.all(), write_only=True, required=False
+    )
+    user_name = serializers.CharField(required=False)
+    user_email = serializers.EmailField(required=False)
+
+    class Meta:
+        model = Review
+        fields = '__all__'
+
+    def create(self, validated_data):
+        products = validated_data.pop('product_ids', [])
+        charms = validated_data.pop('charm_ids', [])
+        gift_sets = validated_data.pop('gift_set_ids', [])
+        
+        user_name = validated_data.pop('user_name', None)
+        user_email = validated_data.pop('user_email', None)
+
+        review = Review.objects.create(
+            user_name=user_name,
+            user_email=user_email,
+            **validated_data
+        )
+        
+        if products:
+            review.products.set(products)
+        if charms:
+            review.charms.set(charms)
+        if gift_sets:
+            review.gift_sets.set(gift_sets)
+
+        return review
+
+    def validate_rating(self, value):
+        if value < 1 or value > 5:
+            raise serializers.ValidationError("Rating harus antara 1 dan 5.")
+        return value
 
 class VideoContentSerializer(serializers.ModelSerializer):
     class Meta:
