@@ -165,7 +165,7 @@ def submit_review_via_token(request):
             return Response({'error': 'Beberapa charms tidak termasuk dalam pesanan'}, status=400)
 
         data = request.data.copy()
-        data['user_name'] = token.user.get_full_name() or token.user.username
+        data['user_name'] = token.user.username or token.user.email 
         data['user_email'] = token.user.email
         data['order'] = order.id
 
