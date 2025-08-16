@@ -139,26 +139,24 @@ def validate_review_token(request):
 @api_view(['POST'])
 def submit_review_via_token(request):
     token_str = request.data.get('token')
-    rating = request.data.get('rating')
-    review_text = request.data.get('review_text', "")
-    product_ids = request.data.get('product_ids', [])
-    charm_ids = request.data.get('charm_ids', [])
-    gift_set_ids = request.data.get('gift_set_ids', [])
-    image = request.FILES.get('image')
 
     try:
         token = ReviewToken.objects.get(token=token_str)
         if not token.is_valid():
             return Response({'error': 'Token expired or used'}, status=403)
 
-        # Ambil order
         order = token.order
 
-        # Validasi bahwa item yang direview memang ada di order
+        # Ambil semua id yang diizinkan dari order
         allowed_products = list(order.items.filter(product__isnull=False).values_list('product_id', flat=True))
         allowed_giftsets = list(order.items.filter(gift_set__isnull=False).values_list('gift_set_id', flat=True))
         allowed_charms = list(order.items.values_list('charms__charm_id', flat=True))
 
+        product_ids = request.data.get('products', [])
+        gift_set_ids = request.data.get('gift_sets', [])
+        charm_ids = request.data.get('charms', [])
+
+        # Validasi apakah item yang dikirim benar-benar ada di order
         if not set(product_ids).issubset(set(allowed_products)):
             return Response({'error': 'Beberapa produk tidak termasuk dalam pesanan'}, status=400)
         if not set(gift_set_ids).issubset(set(allowed_giftsets)):
@@ -166,31 +164,22 @@ def submit_review_via_token(request):
         if not set(charm_ids).issubset(set(allowed_charms)):
             return Response({'error': 'Beberapa charms tidak termasuk dalam pesanan'}, status=400)
 
-        # Buat review
-        review = Review.objects.create(
-            user_name=token.user.get_full_name() or token.user.username,
-            user_email=token.user.email,
-            rating=rating,
-            review_text=review_text,
-            image=image,
-            order=order
-        )
+        # Gunakan serializer agar M2M tersimpan
+        serializer = ReviewSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            review = serializer.save(
+                user_name=token.user.get_full_name() or token.user.username,
+                user_email=token.user.email,
+                order=order
+            )
+            token.used = True
+            token.save()
+            return Response(ReviewSerializer(review).data, status=201)
+        else:
+            return Response(serializer.errors, status=400)
 
-        if product_ids:
-            review.products.set(product_ids)
-        if gift_set_ids:
-            review.gift_sets.set(gift_set_ids)
-        if charm_ids:
-            review.charms.set(charm_ids)
-
-        token.used = True
-        token.save()
-
-        return Response({'message': 'Review submitted!'})
     except ReviewToken.DoesNotExist:
         return Response({'error': 'Invalid token'}, status=404)
-    except Exception as e:
-        return Response({'error': str(e)}, status=400)
 
 class NewsletterSubscriberViewSet(viewsets.ModelViewSet):
     queryset = NewsletterSubscriber.objects.all()
