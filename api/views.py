@@ -215,7 +215,10 @@ class OrderViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]  # [IsAuthenticated] 
 
     def get_queryset(self):
-        return Order.objects.filter(user=self.request.user).order_by('-created_at')
+        user = self.request.user
+        if user.is_authenticated and not user.is_staff:
+            return Order.objects.filter(user=user).order_by('-created_at')
+        return Order.objects.all().order_by('-created_at')
 
     @action(detail=True, methods=['patch'])
     def update_status(self, request, pk=None):
