@@ -105,7 +105,6 @@ class ReviewSerializer(serializers.ModelSerializer):
     products = serializers.PrimaryKeyRelatedField(many=True, queryset=Product.objects.all(), required=False)
     charms = serializers.PrimaryKeyRelatedField(many=True, queryset=Charm.objects.all(), required=False)
     gift_sets = serializers.PrimaryKeyRelatedField(many=True, queryset=GiftSetOrBundleMonthlySpecial.objects.all(), required=False)
-    user_name = serializers.CharField(source='user.email', read_only=True)
     image = serializers.ImageField(required=False)
 
     class Meta:
@@ -118,8 +117,12 @@ class ReviewSerializer(serializers.ModelSerializer):
         gift_sets = validated_data.pop('gift_sets', [])
         user = self.context['request'].user
 
-        review = Review.objects.create(user=user, **validated_data)
-
+        review = Review.objects.create(
+            user_name=user.get_full_name() or user.username,
+            user_email=user.email,
+            **validated_data
+        )
+        
         if products:
             review.products.set(products)
         if charms:
