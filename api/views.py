@@ -212,7 +212,7 @@ class AdminOrderTableView(ListAPIView):
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]  # [IsAuthenticated] 
 
     # def get_queryset(self):
     #     return Order.objects.filter(user=self.request.user).order_by('-created_at')
