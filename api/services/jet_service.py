@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+import pytz
 import requests
 import base64
 import json
@@ -24,6 +26,13 @@ class JetService:
     TRACK_PASSWORD = os.getenv("JNT_EXPRESS_TRACK_PASSWORD", "")
     ECOMPANY_ID = os.getenv("JNT_EXPRESS_ECOMPANY_ID", "")
 
+    # Site code for fixed send site
+    FIXED_SEND_SITE_CODE = "BEKASI"
+
+    def _now_jakarta(self):
+            """Get current datetime in Asia/Jakarta timezone"""
+            return datetime.now(pytz.timezone("Asia/Jakarta"))
+
     def _basic_auth_header(self):
         token = f"{self.ECOMPANY_ID}:{self.TRACK_PASSWORD}"
         b64_token = base64.b64encode(token.encode()).decode()
@@ -46,10 +55,56 @@ class JetService:
         print(f"Data JSON: {data_json}") 
         return data_json, b64_encoded
 
-    def order(self, detail: dict):
+    def order(self, data: dict):
         """
         Create order
+        FE hanya kirim payload minimal:
+        {
+            "orderid": "ORDERID-0001",
+            "receiver_name": "PENERIMA",
+            "receiver_phone": "+62812348888",
+            "receiver_addr": "Jl. Penerima No.1",
+            "receiver_zip": "40123",
+            "destination_code": "JKT",
+            "receiver_area": "JKT002",
+            "item_name": "topi,tas",
+            "cod": "120000",
+            "goodsvalue": "100000"
+        }
         """
+
+        now = self._now_jakarta()
+        orderdate = now.strftime("%Y-%m-%d %H:%M:%S")
+
+        if now.hour >= 17:
+            send_date = now + timedelta(days=1)
+        else:
+            send_date = now
+
+        sendstarttime = send_date.strftime("%Y-%m-%d") + " 12:00:00"
+        sendendtime = send_date.strftime("%Y-%m-%d") + " 17:00:00"
+
+        detail = {
+            "username": self.ORDER_USERNAME,
+            "api_key": self.ORDER_API_KEY,
+            "shipper_name": "Caroline Thalia",
+            "shipper_contact": "SPARKLORES ADMIN",
+            "shipper_phone": "+628123456789",
+            "shipper_addr": "Jl. Dr. Ratna No.59, RT.001/RW.001, Jatibening",
+            "origin_code": "BKI",
+            "qty": "1",
+            "weight": "1",
+            "goodsdesc": "Sparklore’s Barang",
+            "servicetype": "1",
+            "insurance": "250",
+            "orderdate": orderdate,
+            "sendstarttime": sendstarttime,
+            "sendendtime": sendendtime,
+            "expresstype": "EZ",
+        }
+
+        detail.update(data)
+
         url = f"{self.ORDER_BASE_URL}/jts-idn-ecommerce-api/api/order/create"
         wrapper = {"detail": [detail]}
         data_json, data_sign = self._generate_signature(wrapper, self.ORDER_KEY)
@@ -59,6 +114,10 @@ class JetService:
             "data_sign": data_sign
         }
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
+
+        print("===== DEBUG ORDER J&T =====")
+        print("Request payload:", json.dumps(detail, indent=2, ensure_ascii=False))
+        print("===========================")
 
         resp = requests.post(url, data=payload, headers=headers)
         resp.raise_for_status()
@@ -70,6 +129,10 @@ class JetService:
         :param detail: dict, payload 'detail' saja, tanpa wrapper
         """
         url = f"{self.ORDER_BASE_URL}/jts-idn-ecommerce-api/api/order/cancel"
+
+        detail["username"] = self.ORDER_USERNAME
+        detail["api_key"] = self.ORDER_API_KEY
+
         wrapper = {"detail": [detail]}
         data_json, data_sign = self._generate_signature(wrapper, self.ORDER_KEY)
 
@@ -107,7 +170,12 @@ class JetService:
         :param data: dict, payload data sesuai API
         """
         url = f"{self.GENERAL_BASE_URL}/jandt_track/inquiry.action"
+
+        data["sendSiteCode"] = self.FIXED_SEND_SITE_CODE
+        data["cusName"] = self.ECOMPANY_ID
+
         data_json, sign = self._generate_signature(data, self.TARIFF_KEY)
+
 
         payload = {
             "data": data_json,
@@ -135,10 +203,8 @@ class JetService:
             "printType": print_type
         }
 
-        data_json = json.dumps(data, separators=(',', ':'), ensure_ascii=False)
-        raw = data_json + self.TRACK_PASSWORD
-        md5_hash = hashlib.md5(raw.encode()).digest()
-        data_digest = base64.b64encode(md5_hash).decode()
+        data_json, data_digest = self._generate_signature(data, self.TRACK_PASSWORD)
+
 
         payload = {
             "logistics_interface": data_json,

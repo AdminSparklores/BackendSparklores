@@ -531,16 +531,8 @@ def create_order(request):
 @permission_classes([AllowAny])
 def cancel_order(request):
     jet = JetService()
-    detail = request.data['detail'] 
-    resp = jet.cancel_order(detail=detail)
-    return Response(resp)
-
-
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def track_order(request):
-    jet = JetService()
-    resp = jet.track(awb=request.data['awb'])
+    detail = request.data['detail']  
+    resp = jet.cancel_order(detail=detail)  
     return Response(resp)
 
 
@@ -548,9 +540,16 @@ def track_order(request):
 @permission_classes([AllowAny])
 def check_tariff(request):
     jet = JetService()
-    resp = jet.tariff_check(data=request.data)
+    resp = jet.tariff_check(data=request.data)  
     return Response(resp)
 
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def track_order(request):
+    jet = JetService()
+    resp = jet.track(awb=request.data['awb'])  
+    return Response(resp)
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
