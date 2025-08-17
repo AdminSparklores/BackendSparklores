@@ -522,34 +522,64 @@ def selective_checkout(request):
 @permission_classes([AllowAny])
 def create_order(request):
     jet = JetService()
-    detail = request.data['detail'] 
-    resp = jet.order(detail=detail)
-    return Response(resp)
+    detail = request.data.get("detail")
+
+    if not detail:
+        return Response({"error": "detail is required"}, status=400)
+
+    try:
+        resp = jet.order(detail=detail)
+        return Response(resp)
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
 
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def cancel_order(request):
     jet = JetService()
-    detail = request.data['detail']  
-    resp = jet.cancel_order(detail=detail)  
-    return Response(resp)
+    detail = request.data.get("detail")
+
+    if not detail:
+        return Response({"error": "detail is required"}, status=400)
+
+    try:
+        resp = jet.cancel_order(detail=detail)
+        return Response(resp)
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
 
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def check_tariff(request):
     jet = JetService()
-    resp = jet.tariff_check(data=request.data)  
-    return Response(resp)
+
+    if not request.data:
+        return Response({"error": "request body cannot be empty"}, status=400)
+
+    try:
+        resp = jet.tariff_check(data=request.data)
+        return Response(resp)
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
 
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def track_order(request):
     jet = JetService()
-    resp = jet.track(awb=request.data['awb'])  
-    return Response(resp)
+    awb = request.data.get("awb")
+
+    if not awb:
+        return Response({"error": "awb is required"}, status=400)
+
+    try:
+        resp = jet.track(awb=awb)
+        return Response(resp)
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
+
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
