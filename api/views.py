@@ -522,13 +522,13 @@ def selective_checkout(request):
 @permission_classes([AllowAny])
 def create_order(request):
     jet = JetService()
-    detail = request.data.get("detail")
+    data = request.data
 
-    if not detail:
-        return Response({"error": "detail is required"}, status=400)
+    if not data:
+        return Response({"error": "body is required"}, status=400)
 
     try:
-        resp = jet.order(detail=detail)
+        resp = jet.order(data=data)
         return Response(resp)
     except Exception as e:
         return Response({"error": str(e)}, status=500)
