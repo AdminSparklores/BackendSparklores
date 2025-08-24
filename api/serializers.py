@@ -2,7 +2,7 @@ from django.utils import timezone
 from datetime import timedelta
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from .models import Charm, GiftSetOrBundleMonthlySpecial, JNTLocation, OrderItem, OrderItemCharm, Product, Order, Review, NewsletterSubscriber, CartItem, Cart, CartItemCharm, VideoContent, ProductImage, PageBanner, PhotoGallery, DiscountedItem, DiscountCampaign
+from .models import Charm, GiftSetOrBundleMonthlySpecial, JNTLocation, JNTOrder, OrderItem, OrderItemCharm, Product, Order, Review, NewsletterSubscriber, CartItem, Cart, CartItemCharm, VideoContent, ProductImage, PageBanner, PhotoGallery, DiscountedItem, DiscountCampaign
 from django.core.mail import send_mail
 from django.conf import settings
 import textwrap
@@ -346,3 +346,8 @@ class JNTLocationSerializer(serializers.ModelSerializer):
     class Meta:
         model = JNTLocation
         fields = '__all__'
+
+class JNTOrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = JNTOrder
+        fields = ["orderid", "status", "awb_no", "desCode", "etd"]

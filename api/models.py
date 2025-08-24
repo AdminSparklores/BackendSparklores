@@ -370,3 +370,14 @@ class JNTLocation(models.Model):
 
     def __str__(self):
         return f"{self.provinsi} - {self.kabupaten_kota} - {self.kecamatan}"
+    
+class JNTOrder(models.Model):
+    orderid = models.CharField(max_length=100, unique=True)
+    status = models.CharField(max_length=50)
+    awb_no = models.CharField(max_length=50)
+    desCode = models.CharField(max_length=50)
+    etd = models.CharField(max_length=50, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.orderid} - {self.awb_no}"

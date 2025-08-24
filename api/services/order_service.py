@@ -1,10 +1,20 @@
 from django.db import transaction
 from django.conf import settings
-from django.core.mail import send_mail
-from django.urls import reverse
 from collections import Counter
 from ..models import Order, OrderItem, OrderItemCharm, CartItem, ReviewToken
 # from midtrans_services import create_midtrans_token
+from django.core.mail import EmailMessage
+from django.template.loader import render_to_string
+from weasyprint import HTML, CSS
+from django.templatetags.static import static
+from io import BytesIO
+
+def generate_invoice_pdf_html(order):
+    html_string = render_to_string("base.html", {"order": order})
+    css_path = static("css/invoice.css")
+    pdf_file = BytesIO()
+    HTML(string=html_string).write_pdf(pdf_file, stylesheets=[CSS(css_path)])
+    return pdf_file.getvalue()
 
 @transaction.atomic
 def create_order(user, shipping_address, cart_items):
@@ -69,7 +79,6 @@ Terima kasih telah memesan di Sparklore!
 
 Berikut adalah detail pesanan Anda:
 
-Nomor Pesanan : #{order.id}
 Total Pembayaran : Rp {order.total_price:,.0f}
 Alamat Pengiriman :
 {order.shipping_address}
@@ -81,10 +90,13 @@ Hormat kami,
 Tim Sparklore
 """
 
-    send_mail(
+    pdf = generate_invoice_pdf_html(order)
+    
+    email = EmailMessage(
         subject,
         message,
         settings.DEFAULT_FROM_EMAIL,
         [order.user.email],
-        fail_silently=False
     )
+    email.attach(f"Invoice_Order_{order.id}.pdf", pdf, "application/pdf")
+    email.send(fail_silently=False)

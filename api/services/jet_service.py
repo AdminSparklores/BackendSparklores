@@ -5,6 +5,7 @@ import base64
 import json
 import hashlib
 import os
+from api.serializers import JNTOrderSerializer
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -121,7 +122,17 @@ class JetService:
 
         resp = requests.post(url, data=payload, headers=headers)
         resp.raise_for_status()
-        return resp.json()
+        result = resp.json()
+
+        if result.get("success") and "detail" in result:
+            for d in result["detail"]:
+                serializer = JNTOrderSerializer(data=d)
+                if serializer.is_valid():
+                    serializer.save()
+                else:
+                    print("Serializer error:", serializer.errors)
+
+        return result
 
     def cancel_order(self, detail: dict):
         """

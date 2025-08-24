@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="../static/css/style.css">
+</head>
+<body>
+    <div class="header">
+        <h1>INVOICE</h1>
+        <img src="../logo_sparklore.jpg" alt="Logo Sparklore" class="logo">
+    </div>
+
+    <div class="info-row">
+        <div class="info-col">
+            <p><b>To:</b></p>
+            <p>{{ order.user.email }}</p>
+            <p>{{ order.shipping_address }}</p>
+        </div>
+        <div class="info-col">
+            <p><b>Date:</b></p>
+            <p>{{ order.created_at|date:"d F Y" }}</p>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th>Price</th>
+                <th>Qty</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in order.items.all %}
+            <tr>
+                <td>
+                    {% if item.product %}{{ item.product.name }}
+                    {% elif item.gift_set %}{{ item.gift_set.name }}
+                    {% else %}Unknown{% endif %}
+                    
+                    {% for charm_item in item.charms.all %}
+                        <br>Charm: {{ charm_item.charm.name }}
+                    {% endfor %}
+                </td>
+                <td>
+                    {% if item.product %}Rp {{ item.product.price|floatformat:0 }}
+                    {% elif item.gift_set %}Rp {{ item.gift_set.price|floatformat:0 }}
+                    {% else %}Rp 0{% endif %}
+                </td>
+                <td>{{ item.quantity }}</td>
+                <td>
+                    Rp {% if item.product %}{{ item.product.price|floatformat:0|add:item.quantity }}{% else %}0{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="total-row">
+                <td colspan="3">TOTAL</td>
+                <td>Rp {{ order.total_price|floatformat:0 }}</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div class="footer">
+        Thank you for shopping with Sparklore!
+        We truly appreciate your trust and support.
+        May our products bring you the best experience.
+        We look forward to serving you again ✨
+    </div>
+</body>
+</html>
