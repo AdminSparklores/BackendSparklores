@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import CharmViewSet, DiscountCampaignViewSet, GiftSetOrBundleMonthlySpecialViewSet, JNTLocationListView, MidtransSnapTokenView, OrderViewSet, ProductViewSet, CartViewSet, ReviewViewSet, NewsletterSubscriberViewSet, VideoContentViewSet, PageBannerViewSet, PhotoGalleryViewSet, AdminOrderTableView, cancel_order, check_tariff, create_order, print_waybill, track_order, checkout, direct_checkout, selective_checkout, validate_review_token, submit_review_via_token
+from .views import CharmViewSet, DiscountCampaignViewSet, GiftSetOrBundleMonthlySpecialViewSet, JNTLocationListView, JNTOrderDetailView, JNTOrderListCreateView, MidtransSnapTokenView, OrderViewSet, ProductViewSet, CartViewSet, ReviewViewSet, NewsletterSubscriberViewSet, VideoContentViewSet, PageBannerViewSet, PhotoGalleryViewSet, AdminOrderTableView, cancel_order, check_tariff, create_order, print_waybill, track_order, checkout, direct_checkout, selective_checkout, validate_review_token, submit_review_via_token
 
 router = DefaultRouter()
 router.register(r'charms', CharmViewSet, basename='charm')
@@ -31,4 +31,6 @@ urlpatterns = [
     path('api/review/validate/', validate_review_token, name='validate-review-token'),
     path('api/review/submit/', submit_review_via_token, name='submit-review-via-token'),
     path('api/jnt-locations/', JNTLocationListView.as_view(), name='jnt-location-list'),
+    path("orders/", JNTOrderListCreateView.as_view(), name="jntorder-list-create"),
+    path("orders/<str:orderid>/", JNTOrderDetailView.as_view(), name="jntorder-detail"),
 ]

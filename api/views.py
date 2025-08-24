@@ -13,9 +13,9 @@ from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from django.core.mail import send_mail
-from .models import JNTLocation, CartItemCharm, Charm, DiscountCampaign, GiftSetOrBundleMonthlySpecial, NewsletterSubscriber, OrderItem, OrderItemCharm, PhotoGallery, Review, Product, Cart, CartItem, Order, VideoContent, PageBanner, ReviewToken
+from .models import JNTLocation, CartItemCharm, Charm, DiscountCampaign, GiftSetOrBundleMonthlySpecial, JNTOrder, NewsletterSubscriber, OrderItem, OrderItemCharm, PhotoGallery, Review, Product, Cart, CartItem, Order, VideoContent, PageBanner, ReviewToken
 from .serializers import (
-    CharmSerializer, DiscountCampaignSerializer, GiftSetOrBundleMonthlySpecialProductSerializer, ProductSerializer,
+    CharmSerializer, DiscountCampaignSerializer, GiftSetOrBundleMonthlySpecialProductSerializer, JNTOrderSerializer, ProductSerializer,
     CartSerializer, CartItemSerializer,
     OrderSerializer, NewsletterSubscriberSerializer,
     ReviewSerializer, VideoContentSerializer,
@@ -599,3 +599,13 @@ def print_waybill(request):
 class JNTLocationListView(generics.ListAPIView):
     queryset = JNTLocation.objects.all()
     serializer_class = JNTLocationSerializer
+
+class JNTOrderListCreateView(generics.ListCreateAPIView):
+    queryset = JNTOrder.objects.all().order_by('-created_at')
+    serializer_class = JNTOrderSerializer
+
+# Retrieve, update, or delete a single order
+class JNTOrderDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = JNTOrder.objects.all()
+    serializer_class = JNTOrderSerializer
+    lookup_field = "orderid" 
