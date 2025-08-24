@@ -5,7 +5,7 @@ import base64
 import json
 import hashlib
 import os
-from api.serializers import JNTOrderSerializer
+from api.serializers import Order, JNTOrderSerializer
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -126,6 +126,19 @@ class JetService:
 
         if result.get("success") and "detail" in result:
             for d in result["detail"]:
+                orderid = d.get("orderid")
+                awb_no = d.get("awb_no")
+
+                if orderid and awb_no:
+                    try:
+                        order = Order.objects.get(id=orderid)
+                        order.billcode = awb_no 
+                        order.fulfillment_status = Order.FulfillmentStatus.AWAITING_SHIPMENT
+                        order.save()
+                        print(f"Order {orderid} updated with AWB: {awb_no}")
+                    except Order.DoesNotExist:
+                        print(f"Order with id {orderid} not found.")
+
                 serializer = JNTOrderSerializer(data=d)
                 if serializer.is_valid():
                     serializer.save()
