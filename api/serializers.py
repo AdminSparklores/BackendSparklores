@@ -239,7 +239,7 @@ class OrderSerializer(serializers.ModelSerializer):
             'id', 'user', 'user_email',
             'payment_status', 'fulfillment_status',
             'total_price', 'shipping_address', 'shipping_cost', 'rejection_reason',
-            'items', 'created_at', 'updated_at', 'weight',
+            'items', 'created_at', 'updated_at', 'weight', 'billcode',
         ]
         read_only_fields = ['created_at', 'updated_at']
 
@@ -278,11 +278,12 @@ class OrderTableSerializer(serializers.ModelSerializer):
     product_summary = OrderItemSerializer(many=True, read_only=True, source='items')
     message = serializers.SerializerMethodField()
     user_email = serializers.CharField(source='user.email', read_only=True)
+    billcode = OrderSerializer().fields['billcode']
 
     class Meta:
         model = Order
         fields = [
-            'id', 'user_email', 'time_elapsed', 'created_at', 'product_summary',
+            'id', 'user_email','billcode', 'time_elapsed', 'created_at', 'product_summary',
             'message', 'total_price', 'fulfillment_status'
         ]
 
