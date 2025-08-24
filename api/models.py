@@ -147,7 +147,7 @@ class Order(models.Model):
         NOT_ACCEPTED = 'not_accepted', 'Not Accepted'
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    billcode = models.CharField(max_length=50)
+    billcode = models.CharField(max_length=50, blank=True, null=True, unique=True)
     payment_status = models.CharField(max_length=10, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
     fulfillment_status = models.CharField(max_length=20, choices=FulfillmentStatus.choices, default=FulfillmentStatus.PENDING)
     total_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
