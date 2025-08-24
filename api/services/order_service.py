@@ -55,7 +55,7 @@ def generate_invoice_pdf_html(order):
         "invoice/base.html", 
         {"order": order, "processed_items": processed_items}
     )
-    css_path = static("css/style.css")
+    css_path = settings.STATIC_ROOT + "/css/style.css"
     pdf_file = BytesIO()
     HTML(string=html_string).write_pdf(pdf_file, stylesheets=[CSS(css_path)])
     return pdf_file.getvalue()
