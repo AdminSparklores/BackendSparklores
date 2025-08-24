@@ -70,6 +70,7 @@ def create_order(user, shipping_address, cart_items):
     return order, midtrans_token
 
 def send_order_confirmation_email(order):
+    review_url = f"https://sparkloreofficial.com/review/awb"
     subject = f"Terima kasih atas pesanan Anda"
         
     message = f"""
@@ -82,6 +83,7 @@ Berikut adalah detail pesanan Anda:
 Total Pembayaran : Rp {order.total_price:,.0f}
 Alamat Pengiriman :
 {order.shipping_address}
+Klik link berikut untuk tracking pesanan Anda: {review_url}
 
 Kami akan segera memproses pesanan Anda.
 Terima kasih telah berbelanja bersama kami!
