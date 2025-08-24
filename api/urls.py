@@ -31,6 +31,6 @@ urlpatterns = [
     path('api/review/validate/', validate_review_token, name='validate-review-token'),
     path('api/review/submit/', submit_review_via_token, name='submit-review-via-token'),
     path('api/jnt-locations/', JNTLocationListView.as_view(), name='jnt-location-list'),
-    path("orders/", JNTOrderListCreateView.as_view(), name="jntorder-list-create"),
-    path("orders/<str:orderid>/", JNTOrderDetailView.as_view(), name="jntorder-detail"),
+    path("ordersjnt/", JNTOrderListCreateView.as_view(), name="jntorder-list-create"),
+    path("ordersjnt/<str:orderid>/", JNTOrderDetailView.as_view(), name="jntorder-detail"),
 ]
