@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Charm, DiscountedItem, GiftSetOrBundleMonthlySpecial, JNTLocation, OrderItem, OrderItemCharm, Product, Order, Review, NewsletterSubscriber, Cart, CartItem, CartItemCharm, ProductImage, ReviewToken, VideoContent, PageBanner, PhotoGallery, DiscountCampaign
+from .models import Charm, DiscountedItem, GiftSetOrBundleMonthlySpecial, JNTLocation, JNTOrder, OrderItem, OrderItemCharm, Product, Order, Review, NewsletterSubscriber, Cart, CartItem, CartItemCharm, ProductImage, ReviewToken, VideoContent, PageBanner, PhotoGallery, DiscountCampaign
 
 @admin.register(Charm)
 class CharmAdmin(admin.ModelAdmin):
@@ -140,6 +140,13 @@ class GiftSetOrBundleMonthlySpecialAdmin(admin.ModelAdmin):
     list_filter = ('label',)
     search_fields = ('name',)
     filter_horizontal = ('products',)
+
+@admin.register(JNTOrder)
+class JNTOrderAdmin(admin.ModelAdmin):
+    list_display = ("orderid", "awb_no", "status", "desCode", "etd", "created_at")
+    search_fields = ("orderid", "awb_no", "status", "desCode")
+    list_filter = ("status", "created_at")
+    ordering = ("-created_at",)
 
 class OrderItemCharmInline(admin.TabularInline):
     model = OrderItemCharm
