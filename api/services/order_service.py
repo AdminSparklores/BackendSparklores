@@ -10,8 +10,8 @@ from django.templatetags.static import static
 from io import BytesIO
 
 def generate_invoice_pdf_html(order):
-    html_string = render_to_string("base.html", {"order": order})
-    css_path = static("css/invoice.css")
+    html_string = render_to_string("invoice/base.html", {"order": order})
+    css_path = settings.STATIC_ROOT + "/css/style.css"
     pdf_file = BytesIO()
     HTML(string=html_string).write_pdf(pdf_file, stylesheets=[CSS(css_path)])
     return pdf_file.getvalue()
