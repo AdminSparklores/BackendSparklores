@@ -350,6 +350,7 @@ def checkout(request):
                 fulfillment_status='awaiting_shipment',
                 total_price=0,
                 shipping_address=request.data.get("shipping_address", ""),
+                shipping_cost=request.data.get("shipping_cost", ""),
             )
 
             total = 0
@@ -409,6 +410,7 @@ def direct_checkout(request):
                 fulfillment_status='awaiting_shipment',
                 total_price=0,
                 shipping_address=request.data.get("shipping_address", ""),
+                shipping_cost=request.data.get("shipping_cost", "",),
             )
 
             quantity = int(request.data.get("quantity", 1))
@@ -475,6 +477,7 @@ def selective_checkout(request):
                 fulfillment_status='awaiting_shipment',
                 total_price=0,
                 shipping_address=request.data.get("shipping_address", ""),
+                shipping_cost=request.data.get("shipping_cost", ""),
             )
 
             total = 0
