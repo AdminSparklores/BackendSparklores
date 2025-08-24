@@ -33,26 +33,12 @@
             </tr>
         </thead>
         <tbody>
-            {% for item in order.items.all %}
+            {% for row in processed_items %}
             <tr>
-                <td>
-                    {% if item.product %}{{ item.product.name }}
-                    {% elif item.gift_set %}{{ item.gift_set.name }}
-                    {% else %}Unknown{% endif %}
-                    
-                    {% for charm_item in item.charms.all %}
-                        <br>Charm: {{ charm_item.charm.name }}
-                    {% endfor %}
-                </td>
-                <td>
-                    {% if item.product %}Rp {{ item.product.price|floatformat:0 }}
-                    {% elif item.gift_set %}Rp {{ item.gift_set.price|floatformat:0 }}
-                    {% else %}Rp 0{% endif %}
-                </td>
-                <td>{{ item.quantity }}</td>
-                <td>
-                    Rp {% if item.product %}{{ item.product.price|floatformat:0|add:item.quantity }}{% else %}0{% endif %}
-                </td>
+                <td>{{ row.description }}</td>
+                <td>Rp {{ row.price|floatformat:0 }}</td>
+                <td>{{ row.quantity }}</td>
+                <td>Rp {{ row.total|floatformat:0 }}</td>
             </tr>
             {% endfor %}
         </tbody>

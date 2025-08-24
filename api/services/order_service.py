@@ -10,8 +10,52 @@ from django.templatetags.static import static
 from io import BytesIO
 
 def generate_invoice_pdf_html(order):
-    html_string = render_to_string("invoice/base.html", {"order": order})
-    css_path = settings.STATIC_ROOT + "/css/style.css"
+    processed_items = []
+
+    for item in order.items.all():
+        base_name, base_price = "", 0
+
+        if item.product:
+            base_name = item.product.name
+            base_price = item.product.price
+        elif item.gift_set:
+            base_name = item.gift_set.name
+            base_price = item.gift_set.price
+
+        charm_names = []
+        charm_total = 0
+        for charm_item in item.charms.all():
+            if charm_item.charm:
+                charm_names.append(charm_item.charm.name)
+                charm_total += charm_item.charm.price or 0
+
+        if base_name and charm_names:
+            description = f"{base_name} + {', '.join(charm_names)}"
+            final_price = base_price + charm_total
+        elif base_name:
+            description = base_name
+            final_price = base_price
+        elif charm_names:
+            description = ", ".join(charm_names)
+            final_price = charm_total
+        else:
+            description = "Unknown"
+            final_price = 0
+
+        row_total = final_price * item.quantity
+
+        processed_items.append({
+            "description": description,
+            "price": final_price,
+            "quantity": item.quantity,
+            "total": row_total,
+        })
+
+    html_string = render_to_string(
+        "invoice/base.html", 
+        {"order": order, "processed_items": processed_items}
+    )
+    css_path = static("css/style.css")
     pdf_file = BytesIO()
     HTML(string=html_string).write_pdf(pdf_file, stylesheets=[CSS(css_path)])
     return pdf_file.getvalue()
