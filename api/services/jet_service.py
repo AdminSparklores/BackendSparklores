@@ -17,7 +17,10 @@ class JetService:
     """
     # Base URLs
     ORDER_BASE_URL = os.getenv("JNT_EXPRESS_ORDER_BASE_URL", "")
-    GENERAL_BASE_URL = os.getenv("JNT_EXPRESS_GENERAL_BASE_URL", "")
+    TARIFF_BASE_URL = os.getenv("JNT_EXPRESS_TARIFF_BASE_URL", "")
+    TRACK_BASE_URL = os.getenv("JNT_EXPRESS_TRACK_BASE_URL", "")
+    PRINT_BASE_URL = os.getenv("JNT_EXPRESS_PRINT_BASE_URL", "")
+    CANCEL_BASE_URL = os.getenv("JNT_EXPRESS_CANCEL_BASE_URL", "")
 
     # Credentials
     ORDER_KEY = os.getenv("JNT_EXPRESS_ORDER_KEY", "")
@@ -106,7 +109,7 @@ class JetService:
 
         detail.update(data)
 
-        url = f"{self.ORDER_BASE_URL}/jts-idn-ecommerce-api/api/order/create"
+        url = f"{self.ORDER_BASE_URL}"
         wrapper = {"detail": [detail]}
         data_json, data_sign = self._generate_signature(wrapper, self.ORDER_KEY)
 
@@ -152,7 +155,7 @@ class JetService:
         Cancel order
         :param detail: dict, payload 'detail' saja, tanpa wrapper
         """
-        url = f"{self.ORDER_BASE_URL}/jts-idn-ecommerce-api/api/order/cancel"
+        url = f"{self.CANCEL_BASE_URL}"
 
         detail["username"] = self.ORDER_USERNAME
         detail["api_key"] = self.ORDER_API_KEY
@@ -174,7 +177,7 @@ class JetService:
         """
         Tracking by AWB
         """
-        url = f"{self.GENERAL_BASE_URL}/jandt_track/track/trackAction!tracking.action"
+        url = f"{self.TRACK_BASE_URL}"
         payload = {
             "awb": awb,
             "eccompanyid": self.ECOMPANY_ID
@@ -193,7 +196,7 @@ class JetService:
         Tariff check
         :param data: dict, payload data sesuai API
         """
-        url = f"{self.GENERAL_BASE_URL}/jandt_track/inquiry.action"
+        url = f"{self.TARIFF_BASE_URL}"
 
         data["sendSiteCode"] = self.FIXED_SEND_SITE_CODE
         data["cusName"] = self.ECOMPANY_ID
@@ -218,7 +221,7 @@ class JetService:
         :param printmode: Default "1" = single print link
         :param print_type: Default "1"
         """
-        url = f"{self.GENERAL_BASE_URL}/jandt_order_web/labels/labelsAction!getPrintUrl.action"
+        url = f"{self.PRINT_BASE_URL}"
 
         data = {
             "customerid": self.ECOMPANY_ID,
