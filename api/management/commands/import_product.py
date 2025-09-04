@@ -1,43 +1,51 @@
 import csv
 from decimal import Decimal
-from django.core.management.base import BaseCommand
-from api.models import Product
-from django.utils.dateparse import parse_datetime
+from django.core.exceptions import ValidationError
+from api.models import Product 
 
-class Command(BaseCommand):
-    help = 'Import Product from CSV'
+file_path = "Charms Data For Database - Product.csv" 
 
-    def add_arguments(self, parser):
-        parser.add_argument('csv_file', type=str, help='Path to the product CSV file')
+with open(file_path, newline="", encoding="utf-8") as csvfile:
+    reader = csv.DictReader(csvfile)
 
-    def handle(self, *args, **options):
-        csv_file_path = options['csv_file']
+    for row in reader:
+        try:
+            # Bersihkan & mapping data
+            name = row.get("name", "").strip()
+            category = row.get("category", "").strip().lower()
+            label = row.get("label", "null").strip().lower()
+            price = Decimal(row.get("price", "0").strip() or "0")
+            rating = Decimal(row.get("rating", "0").strip() or "0")
+            description = row.get("description", "").strip() or None
+            details = row.get("details", "").strip() or None
+            stock = int(row.get("stock", "0").strip() or 0)
+            sold_stok = int(row.get("sold_stok", "0").strip() or 0)
+            discount = Decimal(row.get("discount", "0").strip() or "0")
+            charms = row.get("charms", "False").strip().lower() in ["1", "true", "yes"]
+            is_charm_spreadable = row.get("is_charm_spreadable", "False").strip().lower() in ["1", "true", "yes"]
 
-        with open(csv_file_path, newline='', encoding='utf-8') as csvfile:
-            reader = csv.DictReader(csvfile)
+            # Buat object
+            product = Product(
+                name=name,
+                category=category,
+                label=label,
+                price=price,
+                rating=rating,
+                description=description,
+                details=details,
+                stock=stock,
+                sold_stok=sold_stok,
+                discount=discount,
+                charms=charms,
+                is_charm_spreadable=is_charm_spreadable,
+            )
 
-            for row in reader:
-                try:
-                    product = Product(
-                        name=row['name'],
-                        category=row['category'],
-                        price=Decimal(row['price']),
-                        label=row['label'],
-                        rating=Decimal(row.get('rating') or 0),
-                        description=row.get('description', ''),
-                        details=row.get('details', ''),
-                        stock=int(row.get('stock') or 0),
-                        created_at=parse_datetime(row.get('created_at')),
-                        sold_stok=int(row.get('sold_stok') or 0),
-                        discount=Decimal(row.get('discount') or 0),
-                        charms=bool(int(row.get('charms', 0))),
-                        is_charm_spreadable=bool(int(row.get('is_charm_spreadable', 0))),
-                    )
+            # Validasi model (jalankan clean())
+            product.full_clean()
+            product.save()
+            print(f"✅ Berhasil tambah produk: {name}")
 
-                    product.full_clean()
-                    product.save()
-
-                    self.stdout.write(self.style.SUCCESS(f"✓ Imported: {product.name}"))
-
-                except Exception as e:
-                    self.stderr.write(f"✗ Error importing {row.get('name')}: {e}")
+        except ValidationError as e:
+            print(f"❌ Validation error pada produk {row.get('name')}: {e}")
+        except Exception as e:
+            print(f"⚠️ Gagal tambah produk {row.get('name')}: {e}")
