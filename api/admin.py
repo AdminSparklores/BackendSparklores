@@ -17,7 +17,7 @@ class ProductImageAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('name', 'category', 'price', 'label', 'stock', 'details', 'rating', 'discount', 'charms', 'is_charm_spreadable')
+    list_display = ('name', 'category', 'price', 'label', 'stock', 'details', 'rating', 'discount', 'charms', 'is_charm_spreadable', 'is_charm_max3','is_charm_max5')
     list_filter = ('category', 'label', 'charms', 'is_charm_spreadable')
     filter_horizontal = ('jewel_set_products',) 
     search_fields = ['name']
