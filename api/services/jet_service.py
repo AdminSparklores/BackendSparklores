@@ -91,7 +91,7 @@ class JetService:
         detail = {
             "username": self.ORDER_USERNAME,
             "api_key": self.ORDER_API_KEY,
-            "shipper_name": "Caroline Thalia",
+            "shipper_name": "Sparklore",
             "shipper_contact": "SPARKLORES ADMIN",
             "shipper_phone": "+628123456789",
             "shipper_addr": "Jl. Dr. Ratna No.59, RT.001/RW.001, Jatibening",

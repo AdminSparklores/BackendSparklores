@@ -67,16 +67,13 @@ class CartViewSet(viewsets.ViewSet):
 
         charms = request.data.get('charms', [])
         request_data = request.data.copy()
-        request_data['charms'] = charms 
+        request_data['charms_input'] = charms 
 
         serializer = CartItemSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
         item = serializer.save(cart=cart)
 
         if charms:
-            if len(charms) > 5:
-                return Response({'error': 'Max 5 charms per item.'}, status=400)
-
             item.charms.clear()
             charm_counts = Counter(charms)
             for charm_id, qty in charm_counts.items():
@@ -90,6 +87,9 @@ class CartViewSet(viewsets.ViewSet):
         item = get_object_or_404(CartItem, pk=pk, cart__user=request.user)
         charms = request.data.get('charms', None)
         request_data = request.data.copy()
+
+        if charms is not None:
+            request_data['charms_input'] = charms
 
         serializer = CartItemSerializer(item, data=request_data, partial=True)
         serializer.is_valid(raise_exception=True)

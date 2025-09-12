@@ -332,11 +332,21 @@ class CartItemSerializer(serializers.ModelSerializer):
 
         if gift_set and (product or charms):
             raise serializers.ValidationError('Gift set tidak boleh dikombinasikan dengan produk atau charms.')
-        if len(charms) > 5:
-            raise serializers.ValidationError('Max 5 charms per item.')
+        
         if product and charms:
             if product.category not in ['necklace', 'bracelet']:
                 raise serializers.ValidationError('Charms hanya bisa ditambahkan ke produk kategori necklace atau bracelet.')
+            
+            if product.is_charm_max3 and product.is_charm_max5:
+                max_charms = 3  # lebih ketat
+            elif product.is_charm_max3:
+                max_charms = 3
+            else:
+                max_charms = 5
+
+            if len(charms) > max_charms:
+                    raise serializers.ValidationError(f'Max {max_charms} charms untuk produk ini.')
+        
         return data
 
 class CartSerializer(serializers.ModelSerializer):

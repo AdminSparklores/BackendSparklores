@@ -114,7 +114,7 @@ def create_order(user, shipping_address, cart_items):
     return order, midtrans_token
 
 def send_order_confirmation_email(order):
-    review_url = f"https://sparkloreofficial.com/review/awb"
+    review_url = f"https://sparkloreofficial.com/review/{order.billcode}/"
     subject = f"Terima kasih atas pesanan Anda"
         
     message = f"""

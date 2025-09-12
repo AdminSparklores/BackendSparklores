@@ -78,6 +78,8 @@ class Product(models.Model):
     charms = models.BooleanField(default=False, help_text="Apakah produk ini memiliki charms?")
     is_charm_spreadable = models.BooleanField(default=False, help_text="Apakah produk ini charmsnya bisa disebarkan?")
 
+    is_charm_max3 = models.BooleanField(default=False, help_text="Apakah produk ini bisa dipasangi maksimal 3 charms?")
+    is_charm_max5 = models.BooleanField(default=False, help_text="Apakah produk ini bisa dipasangi maksimal 5 charms?")
     # Produk di dalam jewel set
     jewel_set_products = models.ManyToManyField('self', blank=True, symmetrical=False)
 
@@ -157,6 +159,7 @@ class Order(models.Model):
     rejection_reason = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
 
     def __str__(self):
         return f"Order #{self.id} - {self.user.email} ({self.payment_status})"
