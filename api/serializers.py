@@ -349,6 +349,14 @@ class CartItemSerializer(serializers.ModelSerializer):
         
         return data
 
+    def create(self, validated_data):
+        validated_data.pop('charms_input', None)
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        validated_data.pop('charms_input', None)
+        return super().update(instance, validated_data)
+
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True)
     class Meta: model = Cart; fields = ['id','items']
