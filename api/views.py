@@ -1,8 +1,5 @@
 from collections import Counter
-from .services.order_service import send_order_confirmation_email, create_order
-from .services.midtrans_services import create_midtrans_token
 from .services.jet_service import JetService
-from .services.review_service import create_and_send_review_token
 from rest_framework import viewsets, status, filters, generics
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -388,10 +385,6 @@ def checkout(request):
             order.total_price = total
             order.save()
 
-            # Jadwalkan email & token setelah commit sukses
-            transaction.on_commit(lambda: send_order_confirmation_email(order))
-            transaction.on_commit(lambda: create_and_send_review_token(order))
-
         return Response({"order_id": order.id, "total_price": total})
 
     except Exception as e:
@@ -452,9 +445,6 @@ def direct_checkout(request):
             order.total_price = total
             order.save()
 
-            transaction.on_commit(lambda: send_order_confirmation_email(order))
-            transaction.on_commit(lambda: create_and_send_review_token(order))
-
         return Response({"order_id": order.id, "total_price": total})
 
     except Exception as e:
@@ -511,8 +501,6 @@ def selective_checkout(request):
 
             order.total_price = total
             order.save()
-            transaction.on_commit(lambda: send_order_confirmation_email(order))
-            transaction.on_commit(lambda: create_and_send_review_token(order))
 
         return Response({"order_id": order.id, "total_price": total})
 

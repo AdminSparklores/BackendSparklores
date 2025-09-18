@@ -2,7 +2,10 @@ from celery import shared_task
 from django.utils import timezone
 from api.models import Order
 from api.services.jet_service import JetService
+from django.db import transaction
+from ..services.review_service import create_and_send_review_token
 import logging
+
 
 logger = logging.getLogger("celery")
 
@@ -66,5 +69,9 @@ def update_order_status_from_tracking():
                     f"Order {order.id} updated to {mapped_status} "
                     f"from '{latest_status}'"
                 )
+                if mapped_status == Order.FulfillmentStatus.DONE:
+                    transaction.on_commit(
+                        lambda o=order: create_and_send_review_token(o)
+                    )
         except Exception as e:
             logger.error(f"Failed tracking {order.billcode}: {e}")

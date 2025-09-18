@@ -7,6 +7,8 @@ import hashlib
 import os
 from api.serializers import Order, JNTOrderSerializer
 from dotenv import load_dotenv
+from django.db import transaction
+from .order_service import send_order_confirmation_email
 
 load_dotenv()
 
@@ -94,7 +96,7 @@ class JetService:
             "shipper_name": "Sparklore",
             "shipper_contact": "SPARKLORES ADMIN",
             "shipper_phone": "+628123456789",
-            "shipper_addr": "Jl. Dr. Ratna No.59, RT.001/RW.001, Jatibening",
+            "shipper_addr": "Jl. Dr. R****, J*********, Kota Bekasi, Jawa Barat ",
             "origin_code": "BKI",
             "qty": "1",
             "weight": "1",
@@ -138,6 +140,7 @@ class JetService:
                         order.billcode = awb_no 
                         order.fulfillment_status = Order.FulfillmentStatus.AWAITING_SHIPMENT
                         order.save()
+                        transaction.on_commit(lambda o=order: send_order_confirmation_email(o))
                         print(f"Order {orderid} updated with AWB: {awb_no}")
                     except Order.DoesNotExist:
                         print(f"Order with id {orderid} not found.")
