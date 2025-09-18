@@ -147,6 +147,7 @@ class Order(models.Model):
         DELIVERY = 'delivery', 'Delivery'
         DONE = 'done', 'Done'
         NOT_ACCEPTED = 'not_accepted', 'Not Accepted'
+        CANCELLED = 'cancelled', 'Cancelled'
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     billcode = models.CharField(max_length=50, blank=True, null=True, unique=True)

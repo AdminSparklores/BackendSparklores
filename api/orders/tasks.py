@@ -7,10 +7,21 @@ import logging
 logger = logging.getLogger("celery")
 
 STATUS_MAPPING = {
-    "Paket telah diterima": Order.FulfillmentStatus.DELIVERY,
     "Manifes": Order.FulfillmentStatus.PACKING,
+
+    "Cancelled": Order.FulfillmentStatus.CANCELLED,
+    "Cancelled AWB": Order.FulfillmentStatus.CANCELLED,
+    "Cancelled AWB by Seller": Order.FulfillmentStatus.CANCELLED,
+    "Cancelled AWB by J&T": Order.FulfillmentStatus.CANCELLED,
+
     "Paket telah diterima oleh": Order.FulfillmentStatus.SHIPPED,
-    "Paket akan dikirim ke alamat penerima": Order.FulfillmentStatus.ON_SHIPPING,
+
+    "Paket akan dikirimkan ke": Order.FulfillmentStatus.ON_SHIPPING,
+    "Paket telah dikirimkan ke": Order.FulfillmentStatus.ON_SHIPPING,
+    "Paket telah sampai di": Order.FulfillmentStatus.ON_SHIPPING,
+
+    "Paket akan dikirim ke alamat penerima": Order.FulfillmentStatus.DELIVERY,
+
 }
 
 def map_status(api_status: str):
