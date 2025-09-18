@@ -22,6 +22,7 @@ STATUS_MAPPING = {
 
     "Paket akan dikirim ke alamat penerima": Order.FulfillmentStatus.DELIVERY,
 
+    "Paket telah diterima": Order.FulfillmentStatus.DONE,
 }
 
 def map_status(api_status: str):
