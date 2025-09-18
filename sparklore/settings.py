@@ -83,6 +83,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
 
     'api',
+    'api.orders',
     'authentification',
     'invoice',
 
