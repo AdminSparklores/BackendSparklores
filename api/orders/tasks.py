@@ -1,7 +1,7 @@
 from celery import shared_task
 from django.utils import timezone
 from api.models import Order
-from api.services import jet_service
+from api.services.jet_service import JetService
 import logging
 
 logger = logging.getLogger("celery")
@@ -38,7 +38,7 @@ def update_order_status_from_tracking():
 
     for order in orders:
         try:
-            resp = jet_service().track(order.billcode)
+            resp = JetService().track(order.billcode)
             history = resp.get("history", [])
             if not history:
                 continue
