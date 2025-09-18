@@ -13,7 +13,6 @@ STATUS_MAPPING = {
     "Paket akan dikirim ke alamat penerima": Order.FulfillmentStatus.ON_SHIPPING,
 }
 
-
 def map_status(api_status: str):
     for key, val in STATUS_MAPPING.items():
         if api_status.startswith(key):
@@ -23,7 +22,19 @@ def map_status(api_status: str):
 
 @shared_task
 def update_order_status_from_tracking():
-    orders = Order.objects.exclude(billcode__isnull=True).exclude(billcode="")
+    """
+    Jalankan tiap 5 menit:
+      * Ambil order yang punya billcode
+      * Bukan fulfillment_status = awaiting_shipment
+      * Hit API JNT track
+      * Update status sesuai mapping
+    """
+    orders = (
+        Order.objects
+        .exclude(billcode__isnull=True)
+        .exclude(billcode="")
+        .exclude(fulfillment_status=Order.FulfillmentStatus.AWAITING_SHIPMENT)
+    )
 
     for order in orders:
         try:
@@ -39,6 +50,9 @@ def update_order_status_from_tracking():
                 order.fulfillment_status = mapped_status
                 order.updated_at = timezone.now()
                 order.save(update_fields=["fulfillment_status", "updated_at"])
-
+                logger.info(
+                    f"Order {order.id} updated to {mapped_status} "
+                    f"from '{latest_status}'"
+                )
         except Exception as e:
             logger.error(f"Failed tracking {order.billcode}: {e}")
