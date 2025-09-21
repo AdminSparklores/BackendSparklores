@@ -8,6 +8,7 @@ from django.template.loader import render_to_string
 from weasyprint import HTML, CSS
 from django.templatetags.static import static
 from io import BytesIO
+import os
 
 def generate_invoice_pdf_html(order):
     processed_items = []
@@ -50,12 +51,14 @@ def generate_invoice_pdf_html(order):
             "quantity": item.quantity,
             "total": row_total,
         })
+    logo_path = os.path.join(settings.STATIC_ROOT, 'image', 'logo_sparklore.jpg')
 
     html_string = render_to_string(
         "invoice/base.html", 
-        {"order": order, "processed_items": processed_items}
+        {"order": order, "processed_items": processed_items, "logo_path": logo_path,}
     )
     css_path = settings.STATIC_ROOT + "/css/style.css"
+
     pdf_file = BytesIO()
     HTML(string=html_string, base_url=settings.STATIC_ROOT).write_pdf(pdf_file, stylesheets=[CSS(css_path)])
     return pdf_file.getvalue()
