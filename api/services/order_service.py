@@ -132,10 +132,11 @@ Alamat Pengiriman :
 {order.shipping_address}
 Klik link berikut untuk tracking pesanan Anda: {review_url}
 
-Kami akan segera memproses pesanan Anda.
+Kami akan segera memproses pesanan Anda. Namun perlu diketahui, bahwa pesanan yang sudah dalam proses tidak dapat dibatalkan oleh pembeli.
+
 Terima kasih telah berbelanja bersama kami!
 
-Hormat kami,
+Salam Hangat,
 Tim Sparklore
 """
 

@@ -1,4 +1,5 @@
 from collections import Counter
+from api.services.cancel_service import send_order_cancellation_email
 from .services.jet_service import JetService
 from rest_framework import viewsets, status, filters, generics
 from rest_framework.decorators import action, api_view, permission_classes
@@ -536,6 +537,19 @@ def cancel_order(request):
 
     try:
         resp = jet.cancel_order(detail=detail)
+        if resp.get("success"):
+            orderid = detail.get("orderid")   
+            reason = detail.get("reason", "Dibatalkan oleh Sparklore")
+
+            try:
+                order = Order.objects.get(id=orderid)
+                order.fulfillment_status = Order.FulfillmentStatus.CANCELLED
+                order.rejection_reason = reason
+                order.save(update_fields=["fulfillment_status","rejection_reason","updated_at"])
+                transaction.on_commit(lambda: send_order_cancellation_email(order, reason))
+            except Order.DoesNotExist:
+                return Response({"error": f"Order {orderid} tidak ditemukan di DB lokal"}, status=500)
+
         return Response(resp)
     except Exception as e:
         return Response({"error": str(e)}, status=500)
