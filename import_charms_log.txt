@@ -1,3 +1,0 @@
-
-Import selesai: 220 sukses, 0 gagal.
-Log: import_charms_log.txt
