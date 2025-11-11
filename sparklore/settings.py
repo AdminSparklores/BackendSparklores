@@ -38,6 +38,9 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://127.0.0.1:8000",
     "https://sparkloreofficial.com",
+    "https://www.sparkloreofficial.com",
+    "http://sparkloreofficial.com",
+    "http://www.sparkloreofficial.com",
 ]
 ALLOWED_HOSTS = [h.strip().rstrip('.') for h in env.list('ALLOWED_HOSTS', default=['localhost'])]
 # CSRF_TRUSTED_ORIGINS = [
